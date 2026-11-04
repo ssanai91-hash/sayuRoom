@@ -51,10 +51,28 @@ function createSayuHQ({THREE,renderer,statues,isBusy=()=>false,base='models/hq/'
 
   function setModel(index,model){models[index]=model;}
 
-  function loadTexture(file,color){
-    return new Promise((resolve,reject)=>loader.load(base+file,t=>{
-      t.flipY=false;t.encoding=color?THREE.sRGBEncoding:THREE.LinearEncoding;
-      t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());resolve(t);},undefined,reject));
+  // manifest 항목은 파일 이름 문자열이거나, 큰 파일을 나눈 {"parts":[...],"bytes":N,"sha256":"..."}.
+  // 받은 바이트는 크기·SHA-256으로 확인한다(이름 해시 8자리 또는 sha256 전체). 잘린 파일은 쓰지 않는다.
+  async function fetchBytes(spec){
+    const parts=typeof spec==='string'?[spec]:spec.parts;
+    const buffers=await Promise.all(parts.map(async p=>{const r=await fetch(base+p);if(!r.ok)throw new Error(p+' '+r.status);return r.arrayBuffer();}));
+    const total=buffers.reduce((s,b)=>s+b.byteLength,0),bytes=new Uint8Array(total);let o=0;
+    for(const b of buffers){bytes.set(new Uint8Array(b),o);o+=b.byteLength;}
+    if(spec.bytes&&total!==spec.bytes)throw new Error('크기 불일치 '+total+'≠'+spec.bytes);
+    const want=(typeof spec==='string'?(spec.match(/\.([0-9a-f]{8})\.ktx2$/)||[])[1]:spec.sha256)||'';
+    if(want&&crypto.subtle){
+      const hex=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
+      if(!hex.startsWith(want.toLowerCase()))throw new Error('해시 불일치 '+hex.slice(0,8)+'≠'+want.slice(0,8));
+    }
+    return bytes;
+  }
+  async function loadTexture(spec,color){
+    const url=URL.createObjectURL(new Blob([await fetchBytes(spec)]));
+    try{
+      return await new Promise((resolve,reject)=>loader.load(url,t=>{
+        t.flipY=false;t.encoding=color?THREE.sRGBEncoding:THREE.LinearEncoding;
+        t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());resolve(t);},undefined,reject));
+    }finally{URL.revokeObjectURL(url);}
   }
 
   async function fetchStatue(entry){
