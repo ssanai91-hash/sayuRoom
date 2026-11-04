@@ -14,6 +14,7 @@ const SAYU_ROOM_SPEC=Object.freeze({
 
 function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=true}){
   const spec=SAYU_ROOM_SPEC,p=spec.platform,statues=[],pending=[];
+  const look=SAYU_LOOK, rigs=[], models=[];
   const maxAnisotropy=renderer.capabilities.getMaxAnisotropy();
   const loader=new THREE.TextureLoader();
   function texture(path,color){
@@ -30,7 +31,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   const wood=texture('assets/gallery-wood.webp',true);
   const bump=texture('assets/gallery-wood-bump.png',false);
   const roughness=texture('assets/gallery-wood-roughness.png',false);
-  function floorMaterial(color,rough,reflection){
+  function floorMaterial({color,roughness:rough,reflection}){
     return new THREE.MeshStandardMaterial({color,map:wood,bumpMap:bump,bumpScale:.009,
       roughnessMap:roughness,roughness:rough,metalness:0,envMapIntensity:reflection});
   }
@@ -59,13 +60,13 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   }
   const floorGeo=new THREE.ShapeGeometry(outline,1);
   floorGeo.rotateX(-Math.PI/2);planarUV(floorGeo);
-  const floor=new THREE.Mesh(floorGeo,floorMaterial(0x777d7f,.58,.65));
+  const floor=new THREE.Mesh(floorGeo,floorMaterial(look.floor));
   floor.name='gallery-floor';floor.receiveShadow=true;scene.add(floor);
 
   const platformGeo=new THREE.CylinderGeometry(.996,1,p.height,128,1);
   platformGeo.scale(p.radiusX,1,p.radiusZ);planarUV(platformGeo,p.centerZ);
   const edge=new THREE.MeshStandardMaterial({color:new THREE.Color(0x171310).convertSRGBToLinear(),roughness:.64,metalness:0});
-  const platform=new THREE.Mesh(platformGeo,[edge,floorMaterial(0x8c7d70,.94,.16),edge]);
+  const platform=new THREE.Mesh(platformGeo,[edge,floorMaterial(look.platform),edge]);
   platform.name='elliptical-timber-platform';platform.position.set(0,p.height/2,p.centerZ);
   platform.receiveShadow=true;scene.add(platform);
   // 얇은 검은 하부 틈의 그림자로 단의 두께를 표현한다.
@@ -73,18 +74,16 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   recess.scale.set(p.radiusX,1,p.radiusZ);recess.position.set(0,.013,p.centerZ);scene.add(recess);
 
   const wallMat=new THREE.ShaderMaterial({side:THREE.BackSide,
-    uniforms:{uGlow:{value:1},uHeight:{value:spec.wallHeight},uPerimeter:{value:corners.reduce((t,a,i)=>{const b=corners[(i+1)%corners.length];return t+Math.hypot(b.x-a.x,b.z-a.z);},0)}},
+    uniforms:{uGlow:{value:look.wall.strength},uLow:{value:new THREE.Vector3()},uMiddle:{value:new THREE.Vector3()},uTop:{value:new THREE.Vector3()},uHalo:{value:new THREE.Vector3()},uWidth:{value:1},uSpread:{value:1},uHaloWidth:{value:1},uHeight:{value:spec.wallHeight},uPerimeter:{value:corners.reduce((t,a,i)=>{const b=corners[(i+1)%corners.length];return t+Math.hypot(b.x-a.x,b.z-a.z);},0)}},
     vertexShader:`varying vec2 vUv;varying vec3 vP;void main(){vUv=uv;vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-    fragmentShader:`varying vec2 vUv;varying vec3 vP;uniform float uGlow;uniform float uHeight;uniform float uPerimeter;
+    fragmentShader:`varying vec2 vUv;varying vec3 vP;uniform vec3 uLow,uMiddle,uTop,uHalo;uniform float uWidth,uSpread,uHaloWidth,uGlow;uniform float uHeight;uniform float uPerimeter;
     float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
     float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
     void main(){
       float y=vUv.y;float along=vUv.x*uPerimeter;
       float plaster=.5*n(vec2(along*8.,vP.y*31.))+.3*n(vec2(along*33.,vP.y*125.))+.2*n(vec2(along*.7,vP.y*1.8));
-      vec3 low=vec3(.011,.0052,.0026),wash=vec3(.40,.185,.068),cove=vec3(1.48,.86,.36);
-      float broad=exp((y-1.)*2.8),lip=exp((y-1.)*95.);
-      float halo=exp(-abs(vP.y-uHeight)*8.);
-      vec3 c=low+(wash*broad+cove*lip+vec3(.24,.12,.045)*halo)*uGlow;
+      float below=vP.y-uHeight;
+      vec3 c=uLow+(uMiddle*exp(below/uSpread)+uTop*exp(below/uWidth)+uHalo*exp(below/uHaloWidth))*uGlow;
       c*=.91+.18*plaster;gl_FragColor=vec4(c,1.);
       #include <tonemapping_fragment>
       #include <encodings_fragment>
@@ -110,7 +109,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   const wall=new THREE.Mesh(wallGeo,wallMat);
   wall.name='warm-plaster-cove-wall';scene.add(wall);
   // 바닥과 같은 평면을 위에 두고 아래에서 보이도록 뒷면을 그린다(뒤집으면 앞뒤가 바뀐다).
-  const ceiling=new THREE.Mesh(floorGeo.clone(),new THREE.MeshBasicMaterial({color:0x010101,side:THREE.BackSide}));
+  const ceiling=new THREE.Mesh(floorGeo.clone(),new THREE.MeshBasicMaterial({color:look.ceiling.color,side:THREE.BackSide}));
   ceiling.name='black-ceiling';ceiling.position.y=spec.wallHeight+.02;scene.add(ceiling);
 
   // 가로 8자의 두 고리. 호 길이를 따라 나눠 점광 사이의 간격을 일정하게 유지한다.
@@ -153,17 +152,17 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   starsGeo.setAttribute('aSz',new THREE.BufferAttribute(size,1));
   starsGeo.setAttribute('aLum',new THREE.BufferAttribute(luminosity,1));
   const starMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
-    uniforms:{uT:{value:0},uB:{value:1},uPR:{value:renderer.getPixelRatio()},uScale:{value:700}},
-    vertexShader:`attribute float aPh;attribute float aSz;attribute float aLum;uniform float uT;uniform float uPR;uniform float uScale;varying float vA;varying float vLoop;
+    uniforms:{uLoop:{value:1},uSize:{value:1},uBackground:{value:1},uColor:{value:new THREE.Vector3()},uT:{value:0},uB:{value:1},uPR:{value:renderer.getPixelRatio()},uScale:{value:700}},
+    vertexShader:`attribute float aPh;attribute float aSz;attribute float aLum;uniform float uLoop,uSize,uBackground,uT;uniform float uPR;uniform float uScale;varying float vA;varying float vLoop;
     void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vLoop=step(1.,aLum);
-      vA=aLum;gl_PointSize=clamp(aSz*uScale/max(.25,-mv.z),(0.95+vLoop*.85)*uPR,(3.+vLoop*6.)*uPR);
+      vA=mix(aLum*uBackground,uLoop,vLoop);gl_PointSize=clamp(mix(aSz,uSize,vLoop)*uScale/max(.25,-mv.z),(0.95+vLoop*.85)*uPR,(3.+vLoop*6.)*uPR);
       gl_Position=projectionMatrix*mv;}`,
-    fragmentShader:`varying float vA;varying float vLoop;uniform float uB;
+    fragmentShader:`varying float vA;varying float vLoop;uniform vec3 uColor;uniform float uB;
     void main(){float r=length(gl_PointCoord-.5)*2.;
       float core=1.-smoothstep(mix(.24,.10,vLoop),mix(.82,.44,vLoop),r);
       float halo=pow(max(0.,1.-r),1.65)*.42*vLoop;
       float a=clamp((core+halo)*vA*uB,0.,1.);
-      gl_FragColor=vec4(vec3(.95,.96,1.),a);}`
+      gl_FragColor=vec4(uColor,a);}`
   });
   const stars=new THREE.Points(starsGeo,starMaterial);stars.name='quiet-ceiling-lights';scene.add(stars);
 
@@ -189,14 +188,14 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     scene.environment=target.texture;cube.dispose();pmrem.dispose();
   }
 
-  scene.add(new THREE.HemisphereLight(0xd4dce3,0x171009,.18));
-  scene.add(new THREE.AmbientLight(0xffefe0,.08));
+  scene.add(new THREE.HemisphereLight(look.room.sky,look.room.ground,look.room.hemisphere));
+  scene.add(new THREE.AmbientLight(look.room.ambientColor,look.room.ambient));
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate=false;
   // 벽의 따뜻한 간접광이 바닥에도 부드럽게 닿도록 넓고 약한 반사광을 더한다.
-  for(const z of [-7,6]){const bounce=new THREE.PointLight(0xffc596,.38,19,1.8);bounce.position.set(0,3.5,z);scene.add(bounce);}
-  const pedestalMaterial=new THREE.MeshPhysicalMaterial({color:new THREE.Color(0x141516).convertSRGBToLinear(),roughness:.48,metalness:.04,clearcoat:.1,clearcoatRoughness:.65,envMapIntensity:.26});
-  const pedestalTopMaterial=new THREE.MeshPhysicalMaterial({color:new THREE.Color(0x4a4035).convertSRGBToLinear(),roughness:.48,metalness:.12,envMapIntensity:.75});
+  for(const z of [-7,6]){const bounce=new THREE.PointLight(look.room.bounceColor,look.room.bounce,19,1.8);bounce.position.set(0,3.5,z);scene.add(bounce);}
+  const pedestalMaterial=new THREE.MeshPhysicalMaterial({color:new THREE.Color(look.pedestal.color).convertSRGBToLinear(),roughness:look.pedestal.roughness,metalness:.04,clearcoat:.1,clearcoatRoughness:.65,envMapIntensity:look.pedestal.reflection});
+  const pedestalTopMaterial=new THREE.MeshPhysicalMaterial({color:new THREE.Color(look.pedestalTop.color).convertSRGBToLinear(),roughness:look.pedestalTop.roughness,metalness:.12,envMapIntensity:look.pedestalTop.reflection});
   function roundPedestal(diameter,height){
     const r=diameter/2,b=.004;
     const profile=[new THREE.Vector2(0,0),new THREE.Vector2(r-b,0),new THREE.Vector2(r,b),
@@ -207,39 +206,88 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     for(const part of [body,top]){part.castShadow=true;part.receiveShadow=true;}
     const pedestal=new THREE.Group();pedestal.add(body,top);return pedestal;
   }
+  // Three r128 clone()은 재질 생성자를 유지한다. 2K·4K 및 교체 중 겹치는 재질에 같은 보정을 쓴다.
+  const gloss={value:new THREE.Vector4()},ao={value:look.statue.ao};
+  class StatueMaterial extends THREE.MeshStandardMaterial {
+    onBeforeCompile(shader){
+      shader.uniforms.sayuRough=gloss;shader.uniforms.sayuAO=ao;
+      shader.fragmentShader='uniform vec4 sayuRough;uniform float sayuAO;\n'+shader.fragmentShader
+        .replace('#include <roughnessmap_fragment>',THREE.ShaderChunk.roughnessmap_fragment+`
+          #ifdef USE_ROUGHNESSMAP
+          float r=roughnessFactor;
+          float gold=mix(sayuRough.x,sayuRough.y,clamp((r-.22)/.23,0.,1.));
+          float patina=mix(sayuRough.z,sayuRough.w,clamp((r-.66)/.28,0.,1.));
+          roughnessFactor=mix(mix(gold,.55,smoothstep(.45,.55,r)),patina,smoothstep(.55,.66,r));
+          #endif`)
+        .replace('#include <aomap_fragment>',THREE.ShaderChunk.aomap_fragment.replace(/aoMapIntensity/g,'sayuAO'));
+    }
+  }
+  function lightColor(k){
+    // 흑체 색온도의 표시 RGB 근사, 정확한 분광 측정값은 아니다.
+    const t=Math.max(20,Math.min(65,k/100));
+    return new THREE.Color(1,Math.min(1,(99.4708*Math.log(t)-161.1196)/255),
+      Math.max(0,Math.min(1,(138.5177*Math.log(t-10)-305.0448)/255)));
+  }
+  function setRig(rig){
+    for(const name of ['key','rim','fill']){
+      const lamp=rig[name],v=look.lights[name],[x,y,z]=v.position;
+      lamp.color.copy(lightColor(v.kelvin));lamp.intensity=v.intensity;lamp.angle=v.angle;
+      lamp.position.set(rig.s.x+x,y,rig.s.z+z);
+    }
+  }
+  function applyLook(){
+    renderer.toneMapping=THREE[look.renderer.toneMapping];renderer.toneMappingExposure=look.renderer.exposure;
+    const w=wallMat.uniforms,c=starMaterial.uniforms;
+    for(const [key,field] of [['uLow','low'],['uMiddle','middle'],['uTop','top'],['uHalo','halo']])w[key].value.fromArray(look.wall[field]);
+    w.uGlow.value=look.wall.strength;w.uWidth.value=look.wall.width;w.uSpread.value=look.wall.spread;w.uHaloWidth.value=look.wall.haloWidth;
+    c.uSize.value=look.ceiling.loopSize;c.uLoop.value=look.ceiling.loopBrightness;
+    c.uBackground.value=look.ceiling.backgroundBrightness/.685;c.uColor.value.fromArray(look.ceiling.pointColor);
+    for(const [material,v] of [[floor.material,look.floor],[platform.material[1],look.platform],[pedestalMaterial,look.pedestal],[pedestalTopMaterial,look.pedestalTop]]){
+      material.envMapIntensity=v.reflection;material.roughness=v.roughness;
+    }
+    gloss.value.fromArray([...look.statue.goldRoughness,...look.statue.patinaRoughness]);ao.value=look.statue.ao;
+    for(const model of models)model.traverse(o=>{if(o.isMesh)for(const m of [].concat(o.material))m.envMapIntensity=look.statue.reflection;});
+    rigs.forEach(setRig);renderer.shadowMap.needsUpdate=true;
+  }
+  applyLook();
   function addStatue(model,index){
     const s=spec.pedestals[index],group=new THREE.Group();group.position.set(s.x,p.height,s.z);
     const pedestal=roundPedestal(s.diameter,s.height);
     pedestal.name='cylindrical-pedestal-'+index;group.add(pedestal);
     model.scale.multiplyScalar(s.statueScale);model.position.y=s.height;
-    const preparedMaterials=new Set();
-    model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
-      for(const material of (Array.isArray(o.material)?o.material:[o.material])){
-        if(preparedMaterials.has(material))continue;preparedMaterials.add(material);
-        material.envMapIntensity=1.8;
-        // Packed maps already contain the intended per-pixel values. Do not tint them with old scalar overrides.
+    models.push(model);
+    const prepared=new Map();
+    function prepare(source){
+        if(prepared.has(source))return prepared.get(source);
+        const material=new StatueMaterial().copy(source);
+        prepared.set(source,material);source.dispose();
+        material.envMapIntensity=look.statue.reflection;
         if(!material.userData.sayuPhysicalMaps){material.roughness=.55;material.metalness=.6;}
         for(const key of ['map','normalMap','roughnessMap','metalnessMap','aoMap'])if(material[key]){
           material[key].anisotropy=Math.min(16,maxAnisotropy);material[key].minFilter=THREE.LinearMipmapLinearFilter;material[key].magFilter=THREE.LinearFilter;material[key].needsUpdate=true;
         }
-      }
+        return material;
+    }
+    model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
+      o.material=Array.isArray(o.material)?o.material.map(prepare):prepare(o.material);
     }});group.add(model);scene.add(group);
     // 전면 쪽에서 얼굴·뺨의 손으로 향하게 해 보관 아래의 깊은 그림자를 줄인다.
-    const spot=new THREE.SpotLight(0xfff1db,10.0,8,.27,.88,1.3);
+    const spot=new THREE.SpotLight(0xffffff,1,8,1,.88,1.3);
     const faceY=p.height+s.height+s.statueHeight*s.statueScale*.80;
-    spot.position.set(s.x-.42,spec.wallHeight-.15,s.z+2.8);spot.target.position.set(s.x-.04,faceY,s.z+.04);
+    spot.target.position.set(s.x-.04,faceY,s.z+.04);
     spot.castShadow=true;spot.shadow.mapSize.set(2048,2048);spot.shadow.camera.near=.3;spot.shadow.camera.far=8;
     spot.shadow.bias=-.0001;spot.shadow.normalBias=.0015;spot.shadow.radius=2;scene.add(spot,spot.target);
     // 약 3600K를 목표로 고른 따뜻한 색. 실제 박물관의 측광값은 아니다.
-    const rim=new THREE.SpotLight(0xffcf91,1.9,6,.36,.88,1.5);
-    rim.position.set(s.x+.5,spec.wallHeight-.45,s.z-1.7);rim.target.position.set(s.x,1.65,s.z);scene.add(rim,rim.target);
-    const fill=new THREE.SpotLight(0xfff4e8,1.15,4,.4,.9,1.5);
-    fill.position.set(s.x+.65,2.4,s.z+1.5);fill.target.position.set(s.x,1.7,s.z);scene.add(fill,fill.target);
+    const rim=new THREE.SpotLight(0xffffff,1,6,1,.88,1.5);
+    rim.target.position.set(s.x,1.65,s.z);scene.add(rim,rim.target);
+    const fill=new THREE.SpotLight(0xffffff,1,4,1,.9,1.5);
+    fill.target.position.set(s.x,1.7,s.z);scene.add(fill,fill.target);
+    const rig={s,key:spot,rim,fill};rigs.push(rig);setRig(rig);
     const focusY=p.height+s.height+s.statueHeight*s.statueScale*.6;
     const item={grp:group,x:s.x,z:s.z,focusY};statues.push(item);
     renderer.shadowMap.needsUpdate=true;return item;
   }
   function groundHeight(x,z){return (x*x/(p.radiusX*p.radiusX)+(z-p.centerZ)*(z-p.centerZ)/(p.radiusZ*p.radiusZ))<1?p.height:0;}
-  return {spec,statues,starMaterial,addStatue,groundHeight,constrainPosition,ready:Promise.all(pending)};
+  return {spec,statues,starMaterial,applyLook,addStatue,groundHeight,constrainPosition,ready:Promise.all(pending)};
 }
 if(typeof module!=='undefined')module.exports={SAYU_ROOM_SPEC,createSayuEnvironment};
