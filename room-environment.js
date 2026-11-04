@@ -80,7 +80,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
     float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
     void main(){
-      float y=vUv.y;float along=vUv.x*uPerimeter;
+      float along=vUv.x*uPerimeter;
       float plaster=.5*n(vec2(along*8.,vP.y*31.))+.3*n(vec2(along*33.,vP.y*125.))+.2*n(vec2(along*.7,vP.y*1.8));
       float below=vP.y-uHeight;
       vec3 c=uLow+(uMiddle*exp(below/uSpread)+uTop*exp(below/uWidth)+uHalo*exp(below/uHaloWidth))*uGlow;
@@ -143,8 +143,8 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     const bright=i<loop.length;
     positions.set([v.x,spec.wallHeight-(bright?.025:.016),v.z],i*3);
     phase[i]=random()*Math.PI*2;
-    size[i]=bright?.046:.009+random()*.004;
-    luminosity[i]=bright?1.35:.57+random()*.23;
+    size[i]=bright?0:.009+random()*.004;
+    luminosity[i]=bright?1:.57+random()*.23;
   });
   const starsGeo=new THREE.BufferGeometry();
   starsGeo.setAttribute('position',new THREE.BufferAttribute(positions,3));
@@ -277,7 +277,6 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     spot.target.position.set(s.x-.04,faceY,s.z+.04);
     spot.castShadow=true;spot.shadow.mapSize.set(2048,2048);spot.shadow.camera.near=.3;spot.shadow.camera.far=8;
     spot.shadow.bias=-.0001;spot.shadow.normalBias=.0015;spot.shadow.radius=2;scene.add(spot,spot.target);
-    // 약 3600K를 목표로 고른 따뜻한 색. 실제 박물관의 측광값은 아니다.
     const rim=new THREE.SpotLight(0xffffff,1,6,1,.88,1.5);
     rim.target.position.set(s.x,1.65,s.z);scene.add(rim,rim.target);
     const fill=new THREE.SpotLight(0xffffff,1,4,1,.9,1.5);
