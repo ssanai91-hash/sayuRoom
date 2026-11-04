@@ -1,0 +1,103 @@
+{
+  "before": {
+    "readyMs": 1839,
+    "materials": [
+      {
+        "ao": false,
+        "mr": false,
+        "uv2": false,
+        "aoIntensity": 1,
+        "metalness": 0.53,
+        "roughness": 0.42,
+        "env": 1.15,
+        "ormSize": null,
+        "mapEncoding": 3001,
+        "dataEncoding": null
+      },
+      {
+        "ao": false,
+        "mr": false,
+        "uv2": false,
+        "aoIntensity": 1,
+        "metalness": 0.53,
+        "roughness": 0.42,
+        "env": 1.15,
+        "ormSize": null,
+        "mapEncoding": 3001,
+        "dataEncoding": null
+      }
+    ],
+    "shadowLights": 2,
+    "staticShadows": true,
+    "drawCalls": 11,
+    "triangles": 122762,
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "localReadyRunsMs": [
+      1839,
+      1410.5,
+      1557.5
+    ],
+    "localReadyMedianMs": 1557.5,
+    "softwareMobileViewport": {
+      "frames": 30,
+      "meanFrameMs": 616.489999999851,
+      "fps": 1.6220863274347381
+    }
+  },
+  "after": {
+    "readyMs": 1559.5,
+    "materials": [
+      {
+        "ao": true,
+        "mr": true,
+        "uv2": true,
+        "aoIntensity": 0.8,
+        "metalness": 1,
+        "roughness": 1,
+        "env": 1.8,
+        "ormSize": [
+          1024,
+          1024
+        ],
+        "mapEncoding": 3001,
+        "dataEncoding": 3000
+      },
+      {
+        "ao": true,
+        "mr": true,
+        "uv2": true,
+        "aoIntensity": 0.8,
+        "metalness": 1,
+        "roughness": 1,
+        "env": 1.8,
+        "ormSize": [
+          1024,
+          1024
+        ],
+        "mapEncoding": 3001,
+        "dataEncoding": 3000
+      }
+    ],
+    "shadowLights": 2,
+    "staticShadows": true,
+    "drawCalls": 11,
+    "triangles": 122762,
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "localReadyRunsMs": [
+      1559.5,
+      1407.2999999970198,
+      1645
+    ],
+    "localReadyMedianMs": 1559.5,
+    "softwareMobileViewport": {
+      "frames": 30,
+      "meanFrameMs": 559.0566666665177,
+      "fps": 1.7887274396756438
+    }
+  },
+  "localReadyIncreaseMs": 2.0,
+  "errors": [],
+  "androidDeviceMeasured": false,
+  "baselineCommit": "b54d465dd7084c47c7be30b9d6f8f719bcddc795",
+  "measurementScope": "Local routed assets, SwiftShader software WebGL; not Android or production network. Reused baseline timings may come from an earlier run."
+}

@@ -73,17 +73,18 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   recess.scale.set(p.radiusX,1,p.radiusZ);recess.position.set(0,.013,p.centerZ);scene.add(recess);
 
   const wallMat=new THREE.ShaderMaterial({side:THREE.BackSide,
-    uniforms:{uGlow:{value:1},uPerimeter:{value:corners.reduce((t,a,i)=>{const b=corners[(i+1)%corners.length];return t+Math.hypot(b.x-a.x,b.z-a.z);},0)}},
+    uniforms:{uGlow:{value:1},uHeight:{value:spec.wallHeight},uPerimeter:{value:corners.reduce((t,a,i)=>{const b=corners[(i+1)%corners.length];return t+Math.hypot(b.x-a.x,b.z-a.z);},0)}},
     vertexShader:`varying vec2 vUv;varying vec3 vP;void main(){vUv=uv;vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-    fragmentShader:`varying vec2 vUv;varying vec3 vP;uniform float uGlow;uniform float uPerimeter;
+    fragmentShader:`varying vec2 vUv;varying vec3 vP;uniform float uGlow;uniform float uHeight;uniform float uPerimeter;
     float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
     float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
     void main(){
       float y=vUv.y;float along=vUv.x*uPerimeter;
       float plaster=.5*n(vec2(along*8.,vP.y*31.))+.3*n(vec2(along*33.,vP.y*125.))+.2*n(vec2(along*.7,vP.y*1.8));
-      vec3 low=vec3(.009,.0045,.0028),wash=vec3(.38,.19,.085),cove=vec3(1.45,.93,.48);
+      vec3 low=vec3(.011,.0052,.0026),wash=vec3(.40,.185,.068),cove=vec3(1.48,.86,.36);
       float broad=exp((y-1.)*2.8),lip=exp((y-1.)*95.);
-      vec3 c=low+wash*broad*uGlow+cove*lip*uGlow;
+      float halo=exp(-abs(vP.y-uHeight)*8.);
+      vec3 c=low+(wash*broad+cove*lip+vec3(.24,.12,.045)*halo)*uGlow;
       c*=.91+.18*plaster;gl_FragColor=vec4(c,1.);
       #include <tonemapping_fragment>
       #include <encodings_fragment>
@@ -143,7 +144,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     const bright=i<loop.length;
     positions.set([v.x,spec.wallHeight-(bright?.025:.016),v.z],i*3);
     phase[i]=random()*Math.PI*2;
-    size[i]=bright?.026:.009+random()*.004;
+    size[i]=bright?.046:.009+random()*.004;
     luminosity[i]=bright?1.35:.57+random()*.23;
   });
   const starsGeo=new THREE.BufferGeometry();
@@ -155,11 +156,12 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     uniforms:{uT:{value:0},uB:{value:1},uPR:{value:renderer.getPixelRatio()},uScale:{value:700}},
     vertexShader:`attribute float aPh;attribute float aSz;attribute float aLum;uniform float uT;uniform float uPR;uniform float uScale;varying float vA;varying float vLoop;
     void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vLoop=step(1.,aLum);
-      vA=aLum;gl_PointSize=clamp(aSz*uScale/max(.25,-mv.z),(0.95+vLoop*.85)*uPR,(3.+vLoop*3.)*uPR);
+      vA=aLum;gl_PointSize=clamp(aSz*uScale/max(.25,-mv.z),(0.95+vLoop*.85)*uPR,(3.+vLoop*6.)*uPR);
       gl_Position=projectionMatrix*mv;}`,
     fragmentShader:`varying float vA;varying float vLoop;uniform float uB;
     void main(){float r=length(gl_PointCoord-.5)*2.;
-      float core=1.-smoothstep(.24,.82,r),halo=pow(max(0.,1.-r),3.)*.18*vLoop;
+      float core=1.-smoothstep(mix(.24,.10,vLoop),mix(.82,.44,vLoop),r);
+      float halo=pow(max(0.,1.-r),1.65)*.42*vLoop;
       float a=clamp((core+halo)*vA*uB,0.,1.);
       gl_FragColor=vec4(vec3(.95,.96,1.),a);}`
   });
@@ -222,13 +224,16 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
         }
       }
     }});group.add(model);scene.add(group);
-    const spot=new THREE.SpotLight(0xfff5e8,7.1,8,.32,.78,1.3);
-    spot.position.set(s.x-.5,spec.wallHeight-.15,s.z+1.8);spot.target.position.set(s.x,1.63,s.z);
+    // 전면 쪽에서 얼굴·뺨의 손으로 향하게 해 보관 아래의 깊은 그림자를 줄인다.
+    const spot=new THREE.SpotLight(0xfff1db,10.0,8,.27,.88,1.3);
+    const faceY=p.height+s.height+s.statueHeight*s.statueScale*.80;
+    spot.position.set(s.x-.42,spec.wallHeight-.15,s.z+2.8);spot.target.position.set(s.x-.04,faceY,s.z+.04);
     spot.castShadow=true;spot.shadow.mapSize.set(2048,2048);spot.shadow.camera.near=.3;spot.shadow.camera.far=8;
     spot.shadow.bias=-.0001;spot.shadow.normalBias=.0015;spot.shadow.radius=2;scene.add(spot,spot.target);
-    const rim=new THREE.SpotLight(0xe7f0ff,2.1,6,.36,.88,1.5);
+    // 약 3600K를 목표로 고른 따뜻한 색. 실제 박물관의 측광값은 아니다.
+    const rim=new THREE.SpotLight(0xffcf91,1.9,6,.36,.88,1.5);
     rim.position.set(s.x+.5,spec.wallHeight-.45,s.z-1.7);rim.target.position.set(s.x,1.65,s.z);scene.add(rim,rim.target);
-    const fill=new THREE.SpotLight(0xe8f1ff,.8,4,.4,.9,1.5);
+    const fill=new THREE.SpotLight(0xfff4e8,1.15,4,.4,.9,1.5);
     fill.position.set(s.x+.65,2.4,s.z+1.5);fill.target.position.set(s.x,1.7,s.z);scene.add(fill,fill.target);
     const focusY=p.height+s.height+s.statueHeight*s.statueScale*.6;
     const item={grp:group,x:s.x,z:s.z,focusY};statues.push(item);

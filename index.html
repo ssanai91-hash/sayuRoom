@@ -76,9 +76,9 @@ const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2.5));
 renderer.outputEncoding=THREE.sRGBEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=.95;
+renderer.toneMappingExposure=.98;
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x030202);
+scene.background=new THREE.Color(0x080402).convertSRGBToLinear();
 const camera=new THREE.PerspectiveCamera(62,1,0.05,60);
 
 const room=createSayuEnvironment({THREE,scene,renderer});
