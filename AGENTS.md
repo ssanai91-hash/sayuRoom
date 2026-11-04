@@ -8,4 +8,4 @@
 - 자동 배포 연결이나 배포 워크플로를 임의로 만들거나 변경하지 않는다. 기존 연결에 따라 main 반영이 빌드를 유발할 수 있음을 구분한다.
 - 빌드 생략을 유발하는 커밋 메시지 표시는 넣지 않는다. 한국어로 변경 내용을 설명하고, 완료 시 최종 main의 짧은 SHA와 GitHub 링크를 안내한다.
 - 외부 라이브러리는 cdnjs 고정 버전을 사용한다. 모델 출처와 이용조건은 `models/SOURCES.md`에 유지한다. 새 의식은 제안 후 사용자가 결정한다.
-- Cloudflare Worker 이름은 `sayu-room`이다. 배포 루트는 이 저장소 최상위이며 `npx wrangler deploy`로 최상위 `wrangler.toml`을 사용한다.
+- Cloudflare Worker 이름은 `sayuroom`이다 (대시보드 Worker 이름과 일치해야 GitHub 연결 빌드가 이 주소로 배포됨). 배포 루트는 이 저장소 최상위이며 `npx wrangler deploy`로 최상위 `wrangler.toml`을 사용한다.
