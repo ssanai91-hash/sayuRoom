@@ -65,16 +65,30 @@ bangasayu-right.glb 791f0f4d546225b86136bd0fcbee050568afd3bf0b7088b7999ecbd8afe0
 - Basis Universal 1.16.4로 제작했다. 색상·노멀 13단계 / ORM 12단계 mipmap을 포함한다. glTF UV·이미지 방향을 유지하며 추가로 뒤집지 않았다. 기존 `statue-hq.js`가 `flipY=false`, 색상 sRGB / 노멀·ORM linear로 읽는다.
 - `models/hq/manifest.json`은 클로드 로더의 version 1 / statues 배열 규격이다. 파일명의 8자리 해시는 파일 내용 SHA-256의 앞부분이며, 각 항목의 `bytes`는 해당 불상 텍스처 세 장의 실제 바이트 합계다. 기존 GLB·로더·교체 장치는 유지한다. 원본 ZIP·OBJ·8K 이미지·중간 PNG는 이번 업로드에 포함하지 않는다.
 
-| 파일 | 용량 |
-|---|---:|
-| `bangasayu-left-color.eb363474.ktx2` | 1,606,811B |
-| `bangasayu-left-normal.11db0394.ktx2` | 4,419,578B |
-| `bangasayu-left-orm.30fa0dd6.ktx2` | 616,057B |
-| `bangasayu-right-color.03f2d332.ktx2` | 1,564,432B |
-| `bangasayu-right-normal.fa591094.ktx2` | 4,429,617B |
-| `bangasayu-right-orm.31123439.ktx2` | 512,679B |
-| 왼쪽 세 장 합계 | **6,642,446B** |
-| 오른쪽 세 장 합계 | **6,506,728B** |
-| 총 여섯 장 합계 | **13,149,174B (약 13.15MB)** |
+| 원본 파일 / SHA-256 앞 8자리 | 원본 용량 | 저장된 조각 구성 |
+|---|---:|---|
+| `bangasayu-left-color.eb363474.ktx2` | 1,606,811B | `bangasayu-left-color.eb363474.p0.ktx2` ~ `.p2.ktx2`: 700,000B × 2 + 206,811B (3조각) |
+| `bangasayu-left-normal.11db0394.ktx2` | 4,419,578B | `bangasayu-left-normal.11db0394.p0.ktx2` ~ `.p6.ktx2`: 700,000B × 6 + 219,578B (7조각) |
+| `bangasayu-left-orm.30fa0dd6.ktx2` | 616,057B | 단일 파일 유지 |
+| `bangasayu-right-color.03f2d332.ktx2` | 1,564,432B | `bangasayu-right-color.03f2d332.p0.ktx2` ~ `.p2.ktx2`: 700,000B × 2 + 164,432B (3조각) |
+| `bangasayu-right-normal.fa591094.ktx2` | 4,429,617B | `bangasayu-right-normal.fa591094.p0.ktx2` ~ `.p6.ktx2`: 700,000B × 6 + 229,617B (7조각) |
+| `bangasayu-right-orm.31123439.ktx2` | 512,679B | 단일 파일 유지 |
+| 왼쪽 세 장 합계 | **6,642,446B** | 색상 3 + 노멀 7 + ORM 단일 |
+| 오른쪽 세 장 합계 | **6,506,728B** | 색상 3 + 노멀 7 + ORM 단일 |
+| 총 여섯 장 합계 | **13,149,174B (약 13.15MB)** | 분할 20조각 + ORM 2개 |
 
 이번 변경은 완성된 텍스처와 manifest의 연결·업로드이며, 자동 시험·브라우저 실행·실기기 화면 검증 및 Cloudflare 직접 배포는 수행하지 않았다.
+
+
+### 2026-11-05 — 고화질 4개 원본의 바이트 분할 복구
+
+약 768KB에서 잘린 색상·노멀 단일 파일 4개를 삭제하고, 정상 원본을 재압축·재인코딩 없이 순서대로 700,000B씩 나눴다. 조각명의 해시는 조각 자체가 아닌 정상 원본의 SHA-256 앞 8자리다. manifest의 `parts` 순서대로 이어 붙여 아래 크기와 전체 해시를 확인한다. ORM 2개는 기존 문자열과 바이트를 유지한다.
+
+| 원본 | 바이트 | SHA-256 (이어 붙인 전체) |
+|---|---:|---|
+| `bangasayu-left-color.eb363474.ktx2` | 1606811 | `eb363474212cbb92fdbf3578d417eb73c8db71fc8fa529b826e76306055e98aa` |
+| `bangasayu-left-normal.11db0394.ktx2` | 4419578 | `11db039487e8962debedf868398411d2710a2561047af057c76de13c4d97a38c` |
+| `bangasayu-right-color.03f2d332.ktx2` | 1564432 | `03f2d3329bde2b6a38481a8e5691719b35c363e791ecbbfcea1814e7248cbe96` |
+| `bangasayu-right-normal.fa591094.ktx2` | 4429617 | `fa5910940d95d6c60cc2e3e8d66be0627375cc28e576b9a50cc00d0b65fb388d` |
+
+분할 직후 조각 재결합 결과가 정상 원본과 바이트 단위로 같고 모든 조각이 700,000B 이하임을 확인했다. 이번 작업은 파일 무결성 확인에 한정하며 브라우저·실기기 화면 검증 및 Cloudflare 직접 배포는 수행하지 않는다.

@@ -4,8 +4,28 @@
     {
       "index": 0,
       "side": "left",
-      "color": "bangasayu-left-color.eb363474.ktx2",
-      "normal": "bangasayu-left-normal.11db0394.ktx2",
+      "color": {
+        "parts": [
+          "bangasayu-left-color.eb363474.p0.ktx2",
+          "bangasayu-left-color.eb363474.p1.ktx2",
+          "bangasayu-left-color.eb363474.p2.ktx2"
+        ],
+        "bytes": 1606811,
+        "sha256": "eb363474212cbb92fdbf3578d417eb73c8db71fc8fa529b826e76306055e98aa"
+      },
+      "normal": {
+        "parts": [
+          "bangasayu-left-normal.11db0394.p0.ktx2",
+          "bangasayu-left-normal.11db0394.p1.ktx2",
+          "bangasayu-left-normal.11db0394.p2.ktx2",
+          "bangasayu-left-normal.11db0394.p3.ktx2",
+          "bangasayu-left-normal.11db0394.p4.ktx2",
+          "bangasayu-left-normal.11db0394.p5.ktx2",
+          "bangasayu-left-normal.11db0394.p6.ktx2"
+        ],
+        "bytes": 4419578,
+        "sha256": "11db039487e8962debedf868398411d2710a2561047af057c76de13c4d97a38c"
+      },
       "orm": "bangasayu-left-orm.30fa0dd6.ktx2",
       "normalScale": 1.0,
       "aoIntensity": 0.8,
@@ -14,8 +34,28 @@
     {
       "index": 1,
       "side": "right",
-      "color": "bangasayu-right-color.03f2d332.ktx2",
-      "normal": "bangasayu-right-normal.fa591094.ktx2",
+      "color": {
+        "parts": [
+          "bangasayu-right-color.03f2d332.p0.ktx2",
+          "bangasayu-right-color.03f2d332.p1.ktx2",
+          "bangasayu-right-color.03f2d332.p2.ktx2"
+        ],
+        "bytes": 1564432,
+        "sha256": "03f2d3329bde2b6a38481a8e5691719b35c363e791ecbbfcea1814e7248cbe96"
+      },
+      "normal": {
+        "parts": [
+          "bangasayu-right-normal.fa591094.p0.ktx2",
+          "bangasayu-right-normal.fa591094.p1.ktx2",
+          "bangasayu-right-normal.fa591094.p2.ktx2",
+          "bangasayu-right-normal.fa591094.p3.ktx2",
+          "bangasayu-right-normal.fa591094.p4.ktx2",
+          "bangasayu-right-normal.fa591094.p5.ktx2",
+          "bangasayu-right-normal.fa591094.p6.ktx2"
+        ],
+        "bytes": 4429617,
+        "sha256": "fa5910940d95d6c60cc2e3e8d66be0627375cc28e576b9a50cc00d0b65fb388d"
+      },
       "orm": "bangasayu-right-orm.31123439.ktx2",
       "normalScale": 1.0,
       "aoIntensity": 0.8,
