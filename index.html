@@ -171,12 +171,17 @@ const enter=document.querySelector('#enter');
 enter.disabled=true;
 const status=document.querySelector('#modelStatus');
 async function prepareStatues(){
-  enter.disabled=true;status.textContent='두 반가사유상을 준비하고 있습니다';
+  enter.disabled=true;status.textContent='두 반가사유상을 모시는 중 · 0%';
+  // 두 모델 합계 약 12.6MB. 크기 정보가 없을 때도 받은 양은 보여준다.
+  const EST=[6683816,5913188],got=[0,0],tot=[0,0];
+  const prog=i=>(g,t)=>{got[i]=g;tot[i]=t||EST[i];
+    const all=tot[0]+tot[1]||EST[0]+EST[1],sum=got[0]+got[1];
+    status.textContent='두 반가사유상을 모시는 중 · '+Math.min(99,Math.floor(sum/all*100))+'% ('+(sum/1048576).toFixed(1)+' / '+(all/1048576).toFixed(1)+'MB)';};
   try{
-    const [left,right]=await Promise.all([loadSayuStatue('models/bangasayu-left.glb'),loadSayuStatue('models/bangasayu-right.glb')]);
+    const [left,right]=await Promise.all([loadSayuStatue('models/bangasayu-left.glb',prog(0)),loadSayuStatue('models/bangasayu-right.glb',prog(1))]);
     place(left,-1.75,-.75);place(right,1.75,-.75);
     status.textContent='';enter.disabled=false;document.querySelector('#retryModels').hidden=true;
-  }catch(error){status.textContent='불상을 불러오지 못했습니다. 다시 시도해 주세요.';document.querySelector('#retryModels').hidden=false;console.error(error);}
+  }catch(error){status.textContent='불상을 불러오지 못했습니다 ('+(error&&error.message||error)+'). 다시 시도해 주세요.';document.querySelector('#retryModels').hidden=false;console.error(error);}
 }
 document.querySelector('#retryModels').addEventListener('click',prepareStatues);
 prepareStatues();

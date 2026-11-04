@@ -1,8 +1,16 @@
 /* Bundled NMK GLBs only: uncompressed, embedded JPEGs, packed accessors. */
-async function loadSayuStatue(url){
+async function readWithProgress(response,onProgress){
+  const total=+response.headers.get('content-length')||0;
+  if(!response.body||!response.body.getReader){const b=await response.arrayBuffer();onProgress&&onProgress(b.byteLength,b.byteLength);return b;}
+  const reader=response.body.getReader(),chunks=[];let got=0;
+  for(;;){const {done,value}=await reader.read();if(done)break;chunks.push(value);got+=value.length;onProgress&&onProgress(got,total);}
+  const out=new Uint8Array(got);let o=0;for(const c of chunks){out.set(c,o);o+=c.length;}
+  return out.buffer;
+}
+async function loadSayuStatue(url,onProgress){
   const response=await fetch(url);
   if(!response.ok)throw new Error('모델 응답 '+response.status);
-  const bytes=await response.arrayBuffer(), view=new DataView(bytes);
+  const bytes=await readWithProgress(response,onProgress), view=new DataView(bytes);
   if(view.getUint32(0,true)!==0x46546c67||view.getUint32(4,true)!==2)throw new Error('GLB 형식 오류');
   const jsonSize=view.getUint32(12,true);
   const data=JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,20,jsonSize)));
