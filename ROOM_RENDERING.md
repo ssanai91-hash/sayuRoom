@@ -108,3 +108,22 @@
 - 로컬 자산 경로에서 모델/재질 준비와 첫 렌더링까지 3회 중앙값: 이전 1,557.5ms, 이후 1,559.5ms(차이 +2.0ms). 이전 값은 앞선 실행 기록을 재사용했으므로 정밀 회귀 측정으로 보지 않는다. 실제 인터넷 다운로드나 사용자 입장 대기시간의 보장은 아니다.
 - 390×844·DPR 2.5의 **소프트웨어 렌더러** 확인값은 이전 약 1.62fps / 이후 약 1.79fps. 이것은 중급 Android GPU 성능을 대표하지 않는다. 실기기 접근이 없어 **중급 Android 30fps 이상 및 실기기 입장 지연 증가 1초 이내 조건은 미검증**이다. 해당 조건을 통과로 기록하지 않는다.
 - 재실행 도구: `tools/stage1/verify_browser.py --three <고정 r128 JS 경로>`. 수치: `verification/stage1/browser-metrics.json`, AO/용량: `bake-metrics.json`. Cloudflare 직접 배포는 실행하지 않았다.
+
+## 2단계 고화질 — 교체 장치 (클로드)
+
+`models/hq/manifest.json` 규격:
+
+```json
+{"version":1,"statues":[
+ {"index":0,"side":"left","color":"bangasayu-left-color.<hash8>.ktx2","normal":"bangasayu-left-normal.<hash8>.ktx2",
+  "orm":"bangasayu-left-orm.<hash8>.ktx2","normalScale":0.65,"aoIntensity":0.8,"bytes":0},
+ {"index":1,"side":"right", "...":"같은 형식"}]}
+```
+
+- 색상 sRGB, 노멀·ORM linear, glTF 텍스처 방향 그대로(뒤집지 않음). ORM: R=AO, G=roughness, B=metalness.
+- 노멀을 원본 형상에서 다시 구웠으면 normalScale 1.0 권장, 원본 노멀 축소본이면 0.65.
+- 동작: 카메라가 불상 6m 이내 → 가까운 불상부터 KTX2 받기 → 절·명상이 아닐 때 같은 형상 위에 고화질 재질을 0.8초 겹쳐 보인 뒤 교체, 2K 텍스처 해제. 받는 동안 화면 위 왼쪽에 옅은 점.
+- 제외: 데이터 절약, deviceMemory<4, 압축 텍스처 미지원. 실패 시 조용히 2K 유지(콘솔 기록).
+- 검증: 고화질 파일 없이 기존 입장·동작에 영향 없음, 로더 정상 로드 확인. 실제 고화질 파일 교체 화면은 텍스처 업로드 후 확인 필요.
+- 제작 도구 `tools/stage2/make_hq_textures.py`: 원본 OBJ·8K 지도 → 4K 색상(ETC1S), 노멀(UASTC, 원본 형상 재굽기, 기본 2K: 4K는 장당 약 13MB), 2K ORM. `--self-test`로 접선 공간 계산 검증(현재 GLB 자기 재굽기 평균 오차 0.26~0.49°).
+

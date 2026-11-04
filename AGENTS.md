@@ -11,3 +11,4 @@
 - 커밋할 때마다 해당 커밋 링크와 접속 링크 `https://sayuroom.ajit-worker.workers.dev/`를 함께 전달한다. GitHub 반영과 실제 배포 상태를 구분한다.
 - 외부 라이브러리는 cdnjs 고정 버전을 사용한다. 모델 출처와 이용조건은 `models/SOURCES.md`에 유지한다. 새 의식은 제안 후 사용자가 결정한다.
 - Cloudflare Worker 이름은 `sayuroom`이다 (대시보드 Worker 이름과 일치해야 GitHub 연결 빌드가 이 주소로 배포됨). 배포 루트는 이 저장소 최상위이며 `npx wrangler deploy`로 최상위 `wrangler.toml`을 사용한다.
+- 예외: KTX2 로더(three.js r128 KTX2Loader를 전역 THREE용으로 묶은 번들)와 Basis 트랜스코더는 `vendor/three-r128/`에서 자체 제공한다(MIT, LICENSE 동봉). 재생성은 `tools/stage2/ktx2-bundle/`. 바꿀 때는 폴더 이름을 바꾼다(1년 캐시).

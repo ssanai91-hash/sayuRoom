@@ -1,0 +1,6 @@
+# 해시가 붙은 고화질 텍스처와 버전 폴더의 로더는 바뀌지 않으므로 1년간 캐시한다.
+# 파일을 바꿀 때는 이름(해시)이나 폴더(three-r128)를 바꾼다.
+/models/hq/*.ktx2
+  Cache-Control: public, max-age=31536000, immutable
+/vendor/three-r128/*
+  Cache-Control: public, max-age=31536000, immutable
