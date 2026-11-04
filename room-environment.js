@@ -1,15 +1,19 @@
-/* 긴 마름모꼴 평면: 불상 뒤는 짧은 직선 벽, 양옆 벽은 비스듬히 벌어져 입구 쪽에서 가장 넓다.
-   방 치수는 설계값(m), 불상은 실물 규격. outline은 위에서 본 (x,z) 꼭짓점, 반시계 방향. */
+/* 사진 비례로 설계한 전시실. 뒤쪽 반타원과 입구를 이은 볼록 평면을
+   바닥, 벽, 천장, 보행 경계가 함께 사용한다. 좌표는 (x,z), 단위는 m. */
+const rearArc = Array.from({length: 65}, (_, i) => {
+  const angle = Math.PI + i * Math.PI / 64;
+  return [6.3 * Math.cos(angle), -8.5 + 7.25 * Math.sin(angle)];
+});
 const SAYU_ROOM_SPEC=Object.freeze({
-  outline:Object.freeze([[-3.6,-13],[3.6,-13],[5.5,10],[4.4,14],[-4.4,14],[-5.5,10]]),
+  outline:Object.freeze([...rearArc,[5.5,10],[4.4,14],[-4.4,14],[-5.5,10]]),
   wallHeight:4.2,
   floorGrade:.018, // 전시대 앞 가장자리를 높이 0m로 두고 작품 방향으로 1.8% 상승
   view:Object.freeze({startZ:12.8,entryZ:11.4,entryPitch:.03,walkSpeed:1.5,approachDistance:1.45,portraitFov:72,landscapeFov:58}),
-  platform:Object.freeze({radiusX:3.3,radiusZ:2.7,centerZ:-9.5,height:.12}),
-  ceilingLights:Object.freeze({width:5,depth:2.7,centerZ:-9.75,loopCount:96,backgroundSpacing:.22}),
+  platform:Object.freeze({radiusX:4.05,radiusZ:2.7,centerZ:-9.5,height:.12}),
+  ceilingLights:Object.freeze({width:8.2,depth:4.4,centerZ:-9.75,loopCount:56,backgroundSpacing:.22}),
   pedestals:Object.freeze([
-    Object.freeze({x:-1.3,z:-9.75,diameter:.84,height:1.02,statueHeight:.815,statueScale:1.55}),
-    Object.freeze({x:1.3,z:-9.75,diameter:.88,height:1.02,statueHeight:.908,statueScale:1.46})
+    Object.freeze({x:-1.7,z:-9.75,diameter:.84,height:1.02,statueHeight:.815,statueScale:1.55}),
+    Object.freeze({x:1.7,z:-9.75,diameter:.88,height:1.02,statueHeight:.908,statueScale:1.46})
   ])
 });
 
@@ -42,7 +46,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     for(let i=0;i<a.count;i++)uv.setXY(i,a.getX(i)/1.8,(a.getZ(i)+zOffset)/3.6);
     uv.needsUpdate=true;return geometry;
   }
-  // 각진 볼록 다각형 평면. 바닥은 rotateX(-90°)에서 도형 y가 -z가 되므로 y=-z로 넣는다.
+  // 곡선 후벽을 포함한 볼록 평면. 바닥은 rotateX(-90°)에서 도형 y가 -z가 되므로 y=-z로 넣는다.
   const corners=spec.outline.map(([x,z])=>({x,z}));
   const xs=corners.map(c=>c.x),zs=corners.map(c=>c.z);
   const minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs);
@@ -95,7 +99,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
       #include <encodings_fragment>
     }`
   });
-  // 같은 꼭짓점으로 벽을 세운다. 모서리는 각지게 두고, 상단 간접광은 둘레를 따라 끊김 없이 잇는다.
+  // 같은 꼭짓점으로 벽을 세운다. 상단 간접광은 둘레를 따라 끊김 없이 잇는다.
   const perimeter=[];
   corners.forEach((a,i)=>{const b=corners[(i+1)%corners.length],n=Math.max(2,Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/.5));
     for(let k=0;k<n;k++)perimeter.push({x:a.x+(b.x-a.x)*k/n,z:a.z+(b.z-a.z)*k/n});});
