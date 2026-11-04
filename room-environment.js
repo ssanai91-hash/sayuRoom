@@ -1,11 +1,12 @@
-/* 사진을 기준으로 맞춘 전시실. 불상은 실물 규격, 전시대 치수는 사진 비례 추정값(m). */
+/* 사용자 제시 440㎡와 사진의 긴 공간감을 기준으로 구성. 방 치수는 설계값(m), 불상은 실물 규격. */
 const SAYU_ROOM_SPEC=Object.freeze({
-  radius:9,wallHeight:3.2,
-  platform:Object.freeze({radiusX:3.3,radiusZ:2.7,centerZ:-.6,height:.12}),
-  ceilingLights:Object.freeze({width:5,depth:2.7,centerZ:-.85,loopCount:96,backgroundCount:160}),
+  width:16,depth:28,cornerRadius:3,wallHeight:4.2,
+  view:Object.freeze({startZ:12.8,entryZ:11.4,entryPitch:.03,walkSpeed:1,portraitFov:82,landscapeFov:62}),
+  platform:Object.freeze({radiusX:3.3,radiusZ:2.7,centerZ:-9.5,height:.12}),
+  ceilingLights:Object.freeze({width:5,depth:2.7,centerZ:-9.75,loopCount:96,backgroundCount:1440}),
   pedestals:Object.freeze([
-    Object.freeze({x:-1.3,z:-.85,width:.64,depth:.64,height:1.02,statueHeight:.815}),
-    Object.freeze({x:1.3,z:-.85,width:.68,depth:.68,height:1.02,statueHeight:.908})
+    Object.freeze({x:-1.3,z:-9.75,width:.64,depth:.64,height:1.02,statueHeight:.815}),
+    Object.freeze({x:1.3,z:-9.75,width:.68,depth:.68,height:1.02,statueHeight:.908})
   ])
 });
 
@@ -37,7 +38,24 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     for(let i=0;i<a.count;i++)uv.setXY(i,a.getX(i)/1.8,(a.getZ(i)+zOffset)/3.6);
     uv.needsUpdate=true;return geometry;
   }
-  const floorGeo=new THREE.CircleGeometry(spec.radius,128);
+  // 16×28m에서 반지름 3m인 네 모서리를 둥글리면 약 440.27㎡다.
+  const hw=spec.width/2,hd=spec.depth/2,cr=spec.cornerRadius;
+  const outline=new THREE.Shape();
+  outline.moveTo(-hw+cr,-hd);outline.lineTo(hw-cr,-hd);
+  outline.absarc(hw-cr,-hd+cr,cr,-Math.PI/2,0,false);
+  outline.lineTo(hw,hd-cr);outline.absarc(hw-cr,hd-cr,cr,0,Math.PI/2,false);
+  outline.lineTo(-hw+cr,hd);outline.absarc(-hw+cr,hd-cr,cr,Math.PI/2,Math.PI,false);
+  outline.lineTo(-hw,-hd+cr);outline.absarc(-hw+cr,-hd+cr,cr,Math.PI,Math.PI*1.5,false);
+  outline.closePath();
+  function constrainPosition(x,z,margin=.45){
+    const w=hw-margin,d=hd-margin,r=Math.max(.01,cr-margin);
+    x=Math.max(-w,Math.min(w,x));z=Math.max(-d,Math.min(d,z));
+    const cx=Math.max(0,Math.abs(x)-(w-r)),cz=Math.max(0,Math.abs(z)-(d-r));
+    const distance=Math.hypot(cx,cz);
+    if(distance>r){x=Math.sign(x)*(w-r+cx*r/distance);z=Math.sign(z)*(d-r+cz*r/distance);}
+    return {x,z};
+  }
+  const floorGeo=new THREE.ShapeGeometry(outline,48);
   floorGeo.rotateX(-Math.PI/2);planarUV(floorGeo);
   const floor=new THREE.Mesh(floorGeo,floorMaterial(0x777d7f,.58,.65));
   floor.name='gallery-floor';floor.receiveShadow=true;scene.add(floor);
@@ -53,14 +71,14 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   recess.scale.set(p.radiusX,1,p.radiusZ);recess.position.set(0,.013,p.centerZ);scene.add(recess);
 
   const wallMat=new THREE.ShaderMaterial({side:THREE.BackSide,
-    uniforms:{uGlow:{value:1}},
+    uniforms:{uGlow:{value:1},uPerimeter:{value:2*(spec.width+spec.depth)-8*cr+Math.PI*2*cr}},
     vertexShader:`varying vec2 vUv;varying vec3 vP;void main(){vUv=uv;vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-    fragmentShader:`varying vec2 vUv;varying vec3 vP;uniform float uGlow;
+    fragmentShader:`varying vec2 vUv;varying vec3 vP;uniform float uGlow;uniform float uPerimeter;
     float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
     float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
     void main(){
-      float y=vUv.y;float a=atan(vP.z,vP.x);
-      float plaster=.6*n(vec2(a*95.,vP.y*31.))+.4*n(vec2(a*380.,vP.y*125.));
+      float y=vUv.y;float along=vUv.x*uPerimeter;
+      float plaster=.6*n(vec2(along*6.,vP.y*31.))+.4*n(vec2(along*24.,vP.y*125.));
       vec3 low=vec3(.004,.0023,.0017),mid=vec3(.075,.030,.015),top=vec3(.66,.38,.23);
       vec3 c=mix(low,mid,smoothstep(.05,.86,y));
       c=mix(c,top,exp((y-1.)*8.)*uGlow);
@@ -69,10 +87,22 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
       #include <encodings_fragment>
     }`
   });
-  const wall=new THREE.Mesh(new THREE.CylinderGeometry(spec.radius+.07,spec.radius,spec.wallHeight,160,1,true),wallMat);
-  wall.name='warm-plaster-cove-wall';wall.position.y=spec.wallHeight/2;scene.add(wall);
-  const ceiling=new THREE.Mesh(new THREE.CircleGeometry(spec.radius+.15,128),new THREE.MeshBasicMaterial({color:0x010101}));
-  ceiling.name='black-ceiling';ceiling.rotation.x=Math.PI/2;ceiling.position.y=spec.wallHeight+.02;scene.add(ceiling);
+  // 같은 외곽선으로 벽과 바닥을 만들고 긴 벽에도 상단 간접광을 연속해서 잇는다.
+  const perimeter=outline.getSpacedPoints(256),wallVertices=[],wallUV=[],wallIndices=[];
+  for(let i=0;i<perimeter.length;i++){
+    const v=perimeter[i];wallVertices.push(v.x,0,v.y,v.x,spec.wallHeight,v.y);
+    const u=i/(perimeter.length-1);wallUV.push(u,0,u,1);
+    if(i<perimeter.length-1){const j=i*2;wallIndices.push(j,j+1,j+2,j+2,j+1,j+3);}
+  }
+  const wallGeo=new THREE.BufferGeometry();
+  wallGeo.setAttribute('position',new THREE.Float32BufferAttribute(wallVertices,3));
+  wallGeo.setAttribute('uv',new THREE.Float32BufferAttribute(wallUV,2));
+  wallGeo.setIndex(wallIndices);wallGeo.computeVertexNormals();
+  const wall=new THREE.Mesh(wallGeo,wallMat);
+  wall.name='warm-plaster-cove-wall';scene.add(wall);
+  const ceilingGeo=floorGeo.clone();ceilingGeo.rotateX(Math.PI);
+  const ceiling=new THREE.Mesh(ceilingGeo,new THREE.MeshBasicMaterial({color:0x010101}));
+  ceiling.name='black-ceiling';ceiling.position.y=spec.wallHeight+.02;scene.add(ceiling);
 
   // 가로 8자의 두 고리. 호 길이를 따라 나눠 점광 사이의 간격을 일정하게 유지한다.
   const lighting=spec.ceilingLights,count=lighting.loopCount+lighting.backgroundCount;
@@ -93,13 +123,20 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     positions.set([point.x,spec.wallHeight-.025,point.y+lighting.centerZ],i*3);
     phase[i]=random()*Math.PI*2;size[i]=2.65+random()*.25;luminosity[i]=1.2;
   }
+  // 사진처럼 방 전체를 덮는 조용한 점광 격자. 작품 위 8자만 더 밝게 둔다.
+  const columns=Math.ceil(spec.width/.55),rows=Math.ceil(lighting.backgroundCount/columns);
   for(let i=lighting.loopCount;i<count;i++){
-    let x,z,nearLoop;
+    const cell=i-lighting.loopCount;
+    let x=-hw+.35+(cell%columns+.5)*(spec.width-.7)/columns;
+    let z=-hd+.35+(Math.floor(cell/columns)+.5)*(spec.depth-.7)/rows;
+    x+=(random()-.5)*.07;z+=(random()-.5)*.07;
+    let nearLoop,outside;
     do{
-      const radius=Math.sqrt(random())*(spec.radius-.35),angle=random()*Math.PI*2;
-      x=Math.cos(angle)*radius;z=Math.sin(angle)*radius;nearLoop=false;
+      const bounded=constrainPosition(x,z,.25);
+      outside=Math.hypot(bounded.x-x,bounded.z-z)>.001;nearLoop=false;
       for(let k=0;k<lighting.loopCount;k++)if(Math.hypot(x-positions[k*3],z-positions[k*3+2])<.18){nearLoop=true;break;}
-    }while(nearLoop);
+      if(nearLoop||outside){x=(random()-.5)*(spec.width-.7);z=(random()-.5)*(spec.depth-.7);}
+    }while(nearLoop||outside);
     positions.set([x,spec.wallHeight-.012,z],i*3);
     phase[i]=random()*Math.PI*2;size[i]=.55+random()*.65;luminosity[i]=.18+random()*.18;
   }
@@ -163,11 +200,11 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
       for(const material of (Array.isArray(o.material)?o.material:[o.material]))material.envMapIntensity=1.3;
     }});group.add(model);scene.add(group);
-    const spot=new THREE.SpotLight(0xfff8f2,5.2,8,.29,.9,1.3);
+    const spot=new THREE.SpotLight(0xfff8f2,6.2,8,.29,.9,1.3);
     spot.position.set(s.x-.5,spec.wallHeight-.15,s.z+1.8);spot.target.position.set(s.x,1.63,s.z);
     spot.castShadow=true;spot.shadow.mapSize.set(1024,1024);spot.shadow.camera.near=.3;spot.shadow.camera.far=8;
     spot.shadow.bias=-.0001;spot.shadow.normalBias=.003;spot.shadow.radius=2;scene.add(spot,spot.target);
-    const rim=new THREE.SpotLight(0xe7f0ff,1.25,6,.32,.95,1.5);
+    const rim=new THREE.SpotLight(0xe7f0ff,1.6,6,.32,.95,1.5);
     rim.position.set(s.x+.5,spec.wallHeight-.45,s.z-1.7);rim.target.position.set(s.x,1.65,s.z);scene.add(rim,rim.target);
     const fill=new THREE.SpotLight(0xe8f1ff,.65,4,.38,.95,1.5);
     fill.position.set(s.x+.65,2.4,s.z+1.5);fill.target.position.set(s.x,1.7,s.z);scene.add(fill,fill.target);
@@ -176,6 +213,6 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     renderer.shadowMap.needsUpdate=true;return item;
   }
   function groundHeight(x,z){return (x*x/(p.radiusX*p.radiusX)+(z-p.centerZ)*(z-p.centerZ)/(p.radiusZ*p.radiusZ))<1?p.height:0;}
-  return {spec,statues,starMaterial,addStatue,groundHeight,ready:Promise.all(pending)};
+  return {spec,statues,starMaterial,addStatue,groundHeight,constrainPosition,ready:Promise.all(pending)};
 }
 if(typeof module!=='undefined')module.exports={SAYU_ROOM_SPEC,createSayuEnvironment};

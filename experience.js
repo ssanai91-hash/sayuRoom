@@ -1,9 +1,9 @@
 /* 사유의 방 체험: 공간·불상 코드는 index.html에서 관리한다. */
-function createSayuExperience({THREE,canvas,camera,statues,radius,starBrightness,groundHeight=()=>0}){
+function createSayuExperience({THREE,canvas,camera,statues,roomSpec,constrainPosition,starBrightness,groundHeight=()=>0}){
 const $=s=>document.querySelector(s);
 /* ---------- 시점 ---------- */
-const R=radius;
-const st={x:0,z:8.2,eye:1.6,yaw:0,pitch:.05};
+const view=roomSpec.view;
+const st={x:0,z:view.startZ,eye:1.6,yaw:0,pitch:view.entryPitch};
 let locked=true;
 function applyCam(){
   const eyeY=st.eye+groundHeight(st.x,st.z);
@@ -12,16 +12,16 @@ function applyCam(){
   camera.lookAt(st.x-Math.sin(st.yaw)*cp,eyeY+Math.sin(st.pitch),st.z-Math.cos(st.yaw)*cp);
 }
 function clampPos(){
-  const d=Math.hypot(st.x,st.z);if(d>R-.9){st.x*=(R-.9)/d;st.z*=(R-.9)/d;}
+  const position=constrainPosition(st.x,st.z);st.x=position.x;st.z=position.z;
   for(const s of statues){const dx=st.x-s.x,dz=st.z-s.z,dd=Math.hypot(dx,dz);if(dd<1.15){if(dd<.0001){st.z=s.z+1.15;continue;}st.x=s.x+dx/dd*1.15;st.z=s.z+dz/dd*1.15;}}
 }
 
 /* 트윈 */
 const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
 const tweens=[];
-function tween(props,dur){return new Promise(res=>{const from={};for(const k in props)from[k]=st[k];
+function tween(props,dur,easing=ease){return new Promise(res=>{const from={};for(const k in props)from[k]=st[k];
   if('yaw' in props){let d=props.yaw-from.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));props.yaw=from.yaw+d;}
-  tweens.push({from,props,dur,t:0,res});});}
+  tweens.push({from,props,dur,easing,t:0,res});});}
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
 /* 끌어서 둘러보기 / 탭으로 다가가기 */
@@ -44,7 +44,7 @@ async function approach(s){
   const tx=s.x,tz=s.z+2.1;
   const yaw0=Math.atan2(-(tx-st.x),-(tz-st.z));
   const dist=Math.hypot(tx-st.x,tz-st.z);
-  if(dist>.3){await tween({yaw:yaw0,pitch:0},.9);await tween({x:tx,z:tz},Math.max(1.4,dist*.75));}
+  if(dist>.3){await tween({yaw:yaw0,pitch:0},.9);await tween({x:tx,z:tz},Math.max(1.4,dist/view.walkSpeed),t=>t);}
   await tween({yaw:0,pitch:Math.atan2((s.focusY??2.05)-st.eye-groundHeight(tx,tz),2.1)},1.3);
   locked=false;
 }
@@ -153,7 +153,7 @@ $('#enter').addEventListener('click',async()=>{
   initAudio();if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
   $('#gate').classList.add('gone');
   setTimeout(()=>bowl(.8),1600);
-  await tween({z:5.7,pitch:-.02},6.5);
+  await tween({z:view.entryZ,pitch:view.entryPitch},6.5);
   locked=false;$('#bar').hidden=false;$('#pad').hidden=false;showUI(true);
   setTimeout(()=>$('#hint').style.opacity=0,9000);
 });
@@ -169,14 +169,14 @@ document.addEventListener('visibilitychange',async()=>{
 });
 
 return {update(now,dt){
-  for(let i=tweens.length-1;i>=0;i--){const tw=tweens[i];tw.t+=dt/tw.dur;const k=ease(Math.min(1,tw.t));
+  for(let i=tweens.length-1;i>=0;i--){const tw=tweens[i];tw.t+=dt/tw.dur;const k=tw.easing(Math.min(1,tw.t));
     for(const p in tw.props)st[p]=tw.from[p]+(tw.props[p]-tw.from[p])*k;
     if(tw.t>=1){tweens.splice(i,1);tw.res();}}
   if(!locked){
     // 조이스틱: 위아래 = 앞뒤, 좌우 = 옆걸음. 키보드: W/S 앞뒤, A/D 고개 돌리기
     let fw=move.y,sd=move.x;if(keys['w']||keys['arrowup'])fw=1;if(keys['s']||keys['arrowdown'])fw=-1;
     if(keys['a']||keys['arrowleft'])st.yaw+=dt*1.2;if(keys['d']||keys['arrowright'])st.yaw-=dt*1.2;
-    if(fw||sd){const sp=1.2*dt,sy=Math.sin(st.yaw),cy=Math.cos(st.yaw);
+    if(fw||sd){const sp=view.walkSpeed*dt,sy=Math.sin(st.yaw),cy=Math.cos(st.yaw);
       st.x+=(-sy*fw+cy*sd)*sp;st.z+=(-cy*fw-sy*sd)*sp;clampPos();}
   }
   if(med){

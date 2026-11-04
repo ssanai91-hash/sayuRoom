@@ -82,7 +82,7 @@ scene.background=new THREE.Color(0x030202);
 const camera=new THREE.PerspectiveCamera(62,1,0.05,60);
 
 const room=createSayuEnvironment({THREE,scene,renderer});
-const R=room.spec.radius,starMat=room.starMaterial;
+const starMat=room.starMaterial;
 const statues=room.statues;
 
 const enter=document.querySelector('#enter');
@@ -105,10 +105,10 @@ async function prepareStatues(){
 document.querySelector('#retryModels').addEventListener('click',prepareStatues);
 prepareStatues();
 
-const experience=createSayuExperience({THREE,canvas,camera,statues,radius:R,starBrightness:starMat.uniforms.uB,groundHeight:room.groundHeight});
+const experience=createSayuExperience({THREE,canvas,camera,statues,roomSpec:room.spec,constrainPosition:room.constrainPosition,starBrightness:starMat.uniforms.uB,groundHeight:room.groundHeight});
 
 /* ---------- 루프 ---------- */
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<h?76:54;camera.updateProjectionMatrix();}
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<h?room.spec.view.portraitFov:room.spec.view.landscapeFov;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
 
 let last=performance.now();
