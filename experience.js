@@ -49,15 +49,21 @@ async function approach(s){
 }
 
 /* 걷기 */
-const keys={};let padDir=0;
-function resetInput(){for(const k in keys)delete keys[k];padDir=0;drag=null;}
+const keys={};let move={x:0,y:0};
+const joy=$('#joy'),knob=$('#knob');let joyId=null;
+function joyReset(){joyId=null;move={x:0,y:0};knob.style.transform='';joy.classList.remove('on');}
+function resetInput(){for(const k in keys)delete keys[k];joyReset();drag=null;}
 addEventListener("blur",resetInput);
 document.addEventListener("visibilitychange",resetInput);
 addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
-for(const [id,dir] of [['#fw',1],['#bw',-1]]){const b=$(id);
-  b.addEventListener('pointerdown',e=>{e.preventDefault();padDir=dir;b.setPointerCapture(e.pointerId);});
-  for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,()=>{padDir=0;});}
+function joyUpdate(e){const r=joy.getBoundingClientRect();let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+  const m=r.width/2-12,d=Math.hypot(dx,dy);if(d>m){dx*=m/d;dy*=m/d;}knob.style.transform=`translate(${dx}px,${dy}px)`;
+  const k=d<m*.12?0:1; move={x:dx/m*k,y:-dy/m*k};}
+joy.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(locked)return;joyId=e.pointerId;try{joy.setPointerCapture(e.pointerId);}catch(_){}joy.classList.add('on');joyUpdate(e);});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joyUpdate(e);});
+const joyEnd=e=>{if(e.pointerId===joyId)joyReset();};
+joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
 
 /* ---------- 소리: 싱잉볼과 낮은 울림 ---------- */
 let ac=null,master=null,droneGain=null,soundOn=true;
@@ -166,9 +172,11 @@ return {update(now,dt){
     for(const p in tw.props)st[p]=tw.from[p]+(tw.props[p]-tw.from[p])*k;
     if(tw.t>=1){tweens.splice(i,1);tw.res();}}
   if(!locked){
-    let mv=padDir;if(keys['w']||keys['arrowup'])mv=1;if(keys['s']||keys['arrowdown'])mv=-1;
+    // 조이스틱: 위아래 = 앞뒤, 좌우 = 옆걸음. 키보드: W/S 앞뒤, A/D 고개 돌리기
+    let fw=move.y,sd=move.x;if(keys['w']||keys['arrowup'])fw=1;if(keys['s']||keys['arrowdown'])fw=-1;
     if(keys['a']||keys['arrowleft'])st.yaw+=dt*1.2;if(keys['d']||keys['arrowright'])st.yaw-=dt*1.2;
-    if(mv){st.x-=Math.sin(st.yaw)*mv*dt*1.1;st.z-=Math.cos(st.yaw)*mv*dt*1.1;clampPos();}
+    if(fw||sd){const sp=1.2*dt,sy=Math.sin(st.yaw),cy=Math.cos(st.yaw);
+      st.x+=(-sy*fw+cy*sd)*sp;st.z+=(-cy*fw-sy*sd)*sp;clampPos();}
   }
   if(med){
     const el=(Date.now()-med.start)/1000,cyc=el%10,inhale=cyc<4;

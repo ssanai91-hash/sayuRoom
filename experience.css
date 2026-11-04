@@ -65,10 +65,21 @@ body{background:var(--ink);color:var(--paper);font-family:var(--f-ui);
 #bar button[aria-pressed="false"]{color:var(--dim)}
 .sep{width:1px;background:var(--line);margin:6px 2px}
 
-/* 걷기 패드 */
-#pad{position:fixed;z-index:5;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 86px);display:flex;flex-direction:column;gap:6px;transition:opacity 1.2s}
-#pad button{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--veil);color:var(--paper);font-size:16px;cursor:pointer;touch-action:none}
-#pad button:active{border-color:var(--glow)}
+/* 걷기 조이스틱: 정원과 같은 왼쪽 아래 원형 스틱 */
+#pad{position:fixed;z-index:6;left:calc(max(16px,env(safe-area-inset-left,0px)) + 6px);bottom:calc(24px + env(safe-area-inset-bottom,0px));transition:opacity 1.2s}
+#joy{position:relative;width:120px;height:120px;border-radius:50%;border:1.5px solid rgba(232,199,164,.55);background:rgba(14,10,8,.38);
+  touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;transition:background .3s,border-color .3s}
+#joy.on{background:rgba(14,10,8,.55);border-color:var(--glow)}
+#knob{pointer-events:none;position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(239,228,214,.82)}
+@media (max-width:650px){
+  #pad{left:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+  #joy{width:84px;height:84px}
+  #knob{width:34px;height:34px;margin:-17px 0 0 -17px}
+  #bar{justify-content:flex-end;padding-left:calc(max(12px,env(safe-area-inset-left,0px)) + 96px);padding-right:max(12px,env(safe-area-inset-right,0px))}
+  #bar .row{gap:2px;padding:4px}
+  #bar button{font-size:13px;padding:10px 9px;min-width:0}
+  .sep{margin:6px 1px}
+}
 
 /* 명상 */
 #medi{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
@@ -89,4 +100,5 @@ body{background:var(--ink);color:var(--paper);font-family:var(--f-ui);
 
 
 .btn:disabled{opacity:.45;cursor:wait}
-#credits{position:fixed;left:12px;bottom:4px;font-size:9px;color:var(--dim);pointer-events:none;z-index:6;max-width:90vw}
+/* 출처 표시: 조이스틱·조작대와 겹치지 않게 화면 맨 위 오른쪽 */
+#credits{position:fixed;right:max(12px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 2px);font-size:9px;color:var(--dim);pointer-events:none;z-index:6;max-width:90vw;text-align:right}
