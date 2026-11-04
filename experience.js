@@ -1,14 +1,15 @@
 /* 사유의 방 체험: 공간·불상 코드는 index.html에서 관리한다. */
-function createSayuExperience({THREE,canvas,camera,statues,radius,starBrightness}){
+function createSayuExperience({THREE,canvas,camera,statues,radius,starBrightness,groundHeight=()=>0}){
 const $=s=>document.querySelector(s);
 /* ---------- 시점 ---------- */
 const R=radius;
 const st={x:0,z:8.2,eye:1.6,yaw:0,pitch:.05};
 let locked=true;
 function applyCam(){
-  camera.position.set(st.x,st.eye,st.z);
+  const eyeY=st.eye+groundHeight(st.x,st.z);
+  camera.position.set(st.x,eyeY,st.z);
   const cp=Math.cos(st.pitch);
-  camera.lookAt(st.x-Math.sin(st.yaw)*cp,st.eye+Math.sin(st.pitch),st.z-Math.cos(st.yaw)*cp);
+  camera.lookAt(st.x-Math.sin(st.yaw)*cp,eyeY+Math.sin(st.pitch),st.z-Math.cos(st.yaw)*cp);
 }
 function clampPos(){
   const d=Math.hypot(st.x,st.z);if(d>R-.9){st.x*=(R-.9)/d;st.z*=(R-.9)/d;}
@@ -44,7 +45,7 @@ async function approach(s){
   const yaw0=Math.atan2(-(tx-st.x),-(tz-st.z));
   const dist=Math.hypot(tx-st.x,tz-st.z);
   if(dist>.3){await tween({yaw:yaw0,pitch:0},.9);await tween({x:tx,z:tz},Math.max(1.4,dist*.75));}
-  await tween({yaw:0,pitch:Math.atan2(2.05-st.eye,2.1)},1.3);
+  await tween({yaw:0,pitch:Math.atan2((s.focusY??2.05)-st.eye-groundHeight(tx,tz),2.1)},1.3);
   locked=false;
 }
 
@@ -152,7 +153,7 @@ $('#enter').addEventListener('click',async()=>{
   initAudio();if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
   $('#gate').classList.add('gone');
   setTimeout(()=>bowl(.8),1600);
-  await tween({z:5.4,pitch:.12},6.5);
+  await tween({z:5.7,pitch:-.02},6.5);
   locked=false;$('#bar').hidden=false;$('#pad').hidden=false;showUI(true);
   setTimeout(()=>$('#hint').style.opacity=0,9000);
 });
