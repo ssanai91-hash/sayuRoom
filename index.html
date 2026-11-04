@@ -8,17 +8,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Gowun+Dodum&display=swap">
 <link rel="stylesheet" href="experience.css">
+<link rel="preload" href="assets/entrance-wall.webp" as="image" fetchpriority="high">
 </head>
 <body>
 
 <canvas id="c" aria-label="사유의 방 3D 공간"></canvas>
 
 <div id="gate">
-  <div class="plaque" aria-hidden="true"><span class="ko">사유의방</span><span class="rule"></span><span class="en">A Room of Quiet Contemplation</span></div>
-  <p>어두운 방, 별빛 아래 두 반가사유상이 앉아 있습니다. 소리를 켜고 천천히 들어오세요.</p>
-  <p id="modelStatus" role="status" aria-live="polite"></p>
-  <button class="btn" id="retryModels" hidden>다시 불러오기</button>
-  <button class="btn" id="enter" disabled>고요히 들어가기</button>
+  <h1 class="sr-only">사유의 방 — A Room of Quiet Contemplation</h1>
+  <div class="gate-visual" aria-hidden="true">
+    <img class="gate-art" src="assets/entrance-wall.webp" width="1086" height="1448" alt="" fetchpriority="high" decoding="async">
+  </div>
+  <div class="gate-content">
+    <p class="gate-intro"><span>어두운 방, 별빛 아래</span><span>두 반가사유상이 앉아 있습니다.</span><span>소리를 켜고 천천히 들어오세요.</span></p>
+    <p id="modelStatus" role="status" aria-live="polite"></p>
+    <button class="btn" id="retryModels" hidden>다시 불러오기</button>
+    <button class="btn" id="enter" disabled>고요히 들어가기</button>
+  </div>
 </div>
 
 <div id="hint">끌어서 둘러보기 · 불상을 누르면 그 앞으로 걸어갑니다</div>
