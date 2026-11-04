@@ -1,8 +1,8 @@
 // #calib로 연 개발 화면에서만 내려받는다.
 const poses = [
   ['입구 전체',[0,1.6,11.4],[0,1.72,-9.75]],
-  ['오른쪽 정면',[1.3,1.72,-7.75],[1.3,1.72,-9.75]],
-  ['왼쪽 뒤 ¾',[-2.8,1.72,-11.2],[-1.3,1.72,-9.75]],
+  ['오른쪽 정면',[1.3,1.6,-7.75],[1.3,1.72,-9.75]],
+  ['왼쪽 뒤 ¾',[-2.8,1.6,-11.2],[-1.3,1.72,-9.75]],
   ['두 점 대각선',[2.9,1.7,-5.4],[0,1.62,-9.75]]
 ];
 
@@ -50,6 +50,8 @@ export function mountCalibration(camera,room){
     catch{const box=document.createElement('textarea');box.value=json;box.setAttribute('aria-label','복사할 JSON');panel.append(box);box.select();status.value='선택한 JSON을 복사하세요.';}
   });
   panel.append(status);document.body.append(panel);
-  return {update(){if(pose){camera.position.fromArray(pose.eye);camera.lookAt(...pose.target);}},
+  return {update(){if(pose){const [x,y,z]=pose.eye;
+      camera.position.set(x,y+room.groundHeight(x,z),z);
+      camera.lookAt(...pose.target);}},
     close(){panel.remove();Object.assign(SAYU_LOOK,JSON.parse(saved));room.applyLook();}};
 }

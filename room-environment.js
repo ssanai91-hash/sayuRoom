@@ -3,12 +3,13 @@
 const SAYU_ROOM_SPEC=Object.freeze({
   outline:Object.freeze([[-3.6,-13],[3.6,-13],[5.5,10],[4.4,14],[-4.4,14],[-5.5,10]]),
   wallHeight:4.2,
+  floorGrade:.018, // 전시대 앞 가장자리를 높이 0m로 두고 작품 방향으로 1.8% 상승
   view:Object.freeze({startZ:12.8,entryZ:11.4,entryPitch:.03,walkSpeed:1.5,approachDistance:1.45,portraitFov:72,landscapeFov:58}),
   platform:Object.freeze({radiusX:3.3,radiusZ:2.7,centerZ:-9.5,height:.12}),
   ceilingLights:Object.freeze({width:5,depth:2.7,centerZ:-9.75,loopCount:96,backgroundSpacing:.22}),
   pedestals:Object.freeze([
-    Object.freeze({x:-1.3,z:-9.75,diameter:.84,height:1.02,statueHeight:.815,statueScale:1.12}),
-    Object.freeze({x:1.3,z:-9.75,diameter:.88,height:1.02,statueHeight:.908,statueScale:1.12})
+    Object.freeze({x:-1.3,z:-9.75,diameter:.84,height:1.02,statueHeight:.815,statueScale:1.55}),
+    Object.freeze({x:1.3,z:-9.75,diameter:.88,height:1.02,statueHeight:.908,statueScale:1.46})
   ])
 });
 
@@ -60,6 +61,11 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   }
   const floorGeo=new THREE.ShapeGeometry(outline,1);
   floorGeo.rotateX(-Math.PI/2);planarUV(floorGeo);
+  const ceilingGeo=floorGeo.clone();
+  function floorHeight(z){return (p.centerZ+p.radiusZ-z)*spec.floorGrade;}
+  const floorPoints=floorGeo.attributes.position;
+  for(let i=0;i<floorPoints.count;i++)floorPoints.setY(i,floorHeight(floorPoints.getZ(i)));
+  floorGeo.computeVertexNormals();
   const floor=new THREE.Mesh(floorGeo,floorMaterial(look.floor));
   floor.name='gallery-floor';floor.receiveShadow=true;scene.add(floor);
 
@@ -97,7 +103,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   const wallVertices=[],wallUV=[],wallIndices=[];let run=0;
   for(let i=0;i<perimeter.length;i++){
     const v=perimeter[i];if(i)run+=Math.hypot(v.x-perimeter[i-1].x,v.z-perimeter[i-1].z);
-    wallVertices.push(v.x,0,v.z,v.x,spec.wallHeight,v.z);
+    wallVertices.push(v.x,floorHeight(v.z),v.z,v.x,spec.wallHeight,v.z);
     wallUV.push(run,0,run,1);
     if(i<perimeter.length-1){const j=i*2;wallIndices.push(j,j+1,j+2,j+2,j+1,j+3);}
   }
@@ -109,7 +115,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   const wall=new THREE.Mesh(wallGeo,wallMat);
   wall.name='warm-plaster-cove-wall';scene.add(wall);
   // 바닥과 같은 평면을 위에 두고 아래에서 보이도록 뒷면을 그린다(뒤집으면 앞뒤가 바뀐다).
-  const ceiling=new THREE.Mesh(floorGeo.clone(),new THREE.MeshBasicMaterial({color:look.ceiling.color,side:THREE.BackSide}));
+  const ceiling=new THREE.Mesh(ceilingGeo,new THREE.MeshBasicMaterial({color:look.ceiling.color,side:THREE.BackSide}));
   ceiling.name='black-ceiling';ceiling.position.y=spec.wallHeight+.02;scene.add(ceiling);
 
   // 가로 8자의 두 고리. 호 길이를 따라 나눠 점광 사이의 간격을 일정하게 유지한다.
@@ -278,15 +284,15 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     spot.castShadow=true;spot.shadow.mapSize.set(2048,2048);spot.shadow.camera.near=.3;spot.shadow.camera.far=8;
     spot.shadow.bias=-.0001;spot.shadow.normalBias=.0015;spot.shadow.radius=2;scene.add(spot,spot.target);
     const rim=new THREE.SpotLight(0xffffff,1,6,1,.88,1.5);
-    rim.target.position.set(s.x,1.65,s.z);scene.add(rim,rim.target);
+    rim.target.position.set(s.x,p.height+s.height+s.statueHeight*s.statueScale*.52,s.z);scene.add(rim,rim.target);
     const fill=new THREE.SpotLight(0xffffff,1,4,1,.9,1.5);
-    fill.target.position.set(s.x,1.7,s.z);scene.add(fill,fill.target);
+    fill.target.position.set(s.x,p.height+s.height+s.statueHeight*s.statueScale*.62,s.z);scene.add(fill,fill.target);
     const rig={s,key:spot,rim,fill};rigs.push(rig);setRig(rig);
     const focusY=p.height+s.height+s.statueHeight*s.statueScale*.6;
     const item={grp:group,x:s.x,z:s.z,focusY};statues.push(item);
     renderer.shadowMap.needsUpdate=true;return item;
   }
-  function groundHeight(x,z){return (x*x/(p.radiusX*p.radiusX)+(z-p.centerZ)*(z-p.centerZ)/(p.radiusZ*p.radiusZ))<1?p.height:0;}
+  function groundHeight(x,z){return (x*x/(p.radiusX*p.radiusX)+(z-p.centerZ)*(z-p.centerZ)/(p.radiusZ*p.radiusZ))<1?p.height:floorHeight(z);}
   return {spec,statues,starMaterial,applyLook,addStatue,groundHeight,constrainPosition,ready:Promise.all(pending)};
 }
 if(typeof module!=='undefined')module.exports={SAYU_ROOM_SPEC,createSayuEnvironment};
