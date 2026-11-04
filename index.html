@@ -73,7 +73,7 @@
 const $=s=>document.querySelector(s);
 const canvas=$('#c');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2.5));
 renderer.outputEncoding=THREE.sRGBEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=.95;
@@ -108,7 +108,14 @@ prepareStatues();
 const experience=createSayuExperience({THREE,canvas,camera,statues,roomSpec:room.spec,constrainPosition:room.constrainPosition,starBrightness:starMat.uniforms.uB,groundHeight:room.groundHeight});
 
 /* ---------- 루프 ---------- */
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<h?room.spec.view.portraitFov:room.spec.view.landscapeFov;camera.updateProjectionMatrix();}
+function resize(){
+  const w=innerWidth,h=innerHeight;
+  // 작은 화면은 선명하게, 큰 화면은 전체 렌더 픽셀 수를 제한한다.
+  const ratio=Math.min(window.devicePixelRatio||1,2.5,Math.sqrt(4500000/(w*h)));
+  renderer.setPixelRatio(ratio);renderer.setSize(w,h,false);
+  camera.aspect=w/h;camera.fov=w<h?room.spec.view.portraitFov:room.spec.view.landscapeFov;camera.updateProjectionMatrix();
+  starMat.uniforms.uPR.value=ratio;starMat.uniforms.uScale.value=h*ratio/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
+}
 addEventListener('resize',resize);resize();
 
 let last=performance.now();

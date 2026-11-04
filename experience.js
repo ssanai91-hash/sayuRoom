@@ -41,11 +41,12 @@ function pick(e){
 }
 async function approach(s){
   if(locked)return;locked=true;resetInput();
-  const tx=s.x,tz=s.z+2.1;
+  const distance=view.approachDistance;
+  const tx=s.x,tz=s.z+distance;
   const yaw0=Math.atan2(-(tx-st.x),-(tz-st.z));
   const dist=Math.hypot(tx-st.x,tz-st.z);
   if(dist>.3){await tween({yaw:yaw0,pitch:0},.9);await tween({x:tx,z:tz},Math.max(1.4,dist/view.walkSpeed),t=>t);}
-  await tween({yaw:0,pitch:Math.atan2((s.focusY??2.05)-st.eye-groundHeight(tx,tz),2.1)},1.3);
+  await tween({yaw:0,pitch:Math.atan2((s.focusY??2.05)-st.eye-groundHeight(tx,tz),distance)},1.3);
   locked=false;
 }
 
