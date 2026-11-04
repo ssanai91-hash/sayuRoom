@@ -97,3 +97,5 @@
 - 2026-11-04 GPT 불상 실사 질감 1단계 조명·렌더링 완료: 얼굴·뺨의 오른손 주광, 따뜻한 윤곽광, 점광 halo·벽 번짐, ACES 노출 0.98. 실제 r128 WebGL 동일 카메라 3시점 전후 캡처·ORM/AO/uv2·정적 그림자 확인과 용량 +1,201,420B 기록. Android 30fps·실기기 입장 지연 조건은 미검증으로 명시. 상세는 ROOM_RENDERING.md. 방 평면·조이스틱·입장·정원·배포 설정 유지, Cloudflare 직접 배포 미실행.
 
 - 2026-11-04 클로드 (형 요청) 2단계 고화질 교체 장치: `statue-hq.js`(다가가면 6m 이내에서 받기, 가까운 불상 먼저, 0.8초 겹침 교체 후 2K 텍스처 해제, 절·명상 중 보류, saveData·deviceMemory<4·압축 텍스처 미지원 기기 제외, `?hq=force|off` 시험용), `vendor/three-r128/`(KTX2 로더·트랜스코더 자체 제공), `_headers`(models/hq/*.ktx2, vendor 1년 캐시). `models/hq/manifest.json`이 없으면 아무것도 하지 않아 지금 화면 그대로. 텍스처 제작 도구 `tools/stage2/make_hq_textures.py`(원본 형상에서 노멀 재굽기, 자가 시험 평균 각도 오차 0.26~0.49°). GPT가 만든 고화질 텍스처 6개는 manifest 규격(README 2단계 절)에 맞춰 올리면 연결된다.
+
+- 2026-11-04 GPT 클로드의 `statue-hq.js` 반영 후 완성된 4K 색상·재베이크 노멀/2K ORM KTX2 여섯 장(13,149,174B)을 `models/hq/`에 SHA-256 앞 8자리 이름으로 추가하고 version 1 `manifest.json` 연결(normalScale 1.0, aoIntensity 0.8); 출처·변환·용량 기록, 로더·기존 GLB 유지, 원본·중간 산출물 미포함, 자동 시험·화면 검증·Cloudflare 직접 배포 미실행.

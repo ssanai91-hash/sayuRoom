@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "statues": [
+    {
+      "index": 0,
+      "side": "left",
+      "color": "bangasayu-left-color.eb363474.ktx2",
+      "normal": "bangasayu-left-normal.11db0394.ktx2",
+      "orm": "bangasayu-left-orm.30fa0dd6.ktx2",
+      "normalScale": 1.0,
+      "aoIntensity": 0.8,
+      "bytes": 6642446
+    },
+    {
+      "index": 1,
+      "side": "right",
+      "color": "bangasayu-right-color.03f2d332.ktx2",
+      "normal": "bangasayu-right-normal.fa591094.ktx2",
+      "orm": "bangasayu-right-orm.31123439.ktx2",
+      "normalScale": 1.0,
+      "aoIntensity": 0.8,
+      "bytes": 6506728
+    }
+  ]
+}

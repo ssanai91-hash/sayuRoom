@@ -55,3 +55,26 @@ bangasayu-right.glb 791f0f4d546225b86136bd0fcbee050568afd3bf0b7088b7999ecbd8afe0
 
 재생성: `tools/stage1/bake_materials.py --source-root <원본 ZIP을 푼 statue-work 폴더>`.
 수치 기록: `verification/stage1/bake-metrics.json`. 원본 ZIP/OBJ는 앱에 포함하지 않는다.
+
+## 2단계 근접 고화질 KTX2 — 2026-11-04
+
+- 제공·저작권: 국립중앙박물관, 공공누리 제1유형(출처표시). 위 원본 ZIP의 OBJ와 8192×8192 색상 JPG에서 파생했다. 블로그 사진·생성 이미지·외부 사진 색 추출은 사용하지 않았다.
+- 색상: 원본 8K JPG를 Lanczos로 4096×4096으로 축소한 뒤 sRGB ETC1S KTX2로 압축했다(왼쪽 품질 128, 오른쪽 180).
+- 노멀: 원본 267,636 / 266,890삼각형의 보간 표면 법선을 현재 120,000삼각형 모델의 4096×4096 UV로 새로 투영했다. ±12mm 양방향 케이지, r128 cotangent frame 역변환, UV 섬 밖 32px 패딩을 사용했다. 원본 노멀 JPG의 축소본이 아니므로 두 점 모두 `normalScale: 1.0`이다. 선형 UASTC level 2 + RDO + Zstd 18로 압축하고 각 mipmap의 법선을 재정규화했다. 왼쪽은 용량 제한을 위해 입력 채널을 4/255 간격으로 양자화했다(양자화만의 RMS 방향 오차 약 0.74°, 최대 약 1.57°; 후속 압축 오차 제외). RDO lambda는 왼쪽 4 / 오른쪽 1.2다.
+- ORM: 원본 고해상도 형상에서 128방향·반경 0.18m AO를 2048×2048로 다시 굽고, 원본 스캔 색에서 1단계와 동일한 연속 가중치로 금박·녹·청동의 거칠기·금속성을 추정했다. R=AO, G=roughness, B=metalness. 선형 ETC1S 품질 200, `aoIntensity: 0.8`이다. 실측 물성치는 아니다.
+- Basis Universal 1.16.4로 제작했다. 색상·노멀 13단계 / ORM 12단계 mipmap을 포함한다. glTF UV·이미지 방향을 유지하며 추가로 뒤집지 않았다. 기존 `statue-hq.js`가 `flipY=false`, 색상 sRGB / 노멀·ORM linear로 읽는다.
+- `models/hq/manifest.json`은 클로드 로더의 version 1 / statues 배열 규격이다. 파일명의 8자리 해시는 파일 내용 SHA-256의 앞부분이며, 각 항목의 `bytes`는 해당 불상 텍스처 세 장의 실제 바이트 합계다. 기존 GLB·로더·교체 장치는 유지한다. 원본 ZIP·OBJ·8K 이미지·중간 PNG는 이번 업로드에 포함하지 않는다.
+
+| 파일 | 용량 |
+|---|---:|
+| `bangasayu-left-color.eb363474.ktx2` | 1,606,811B |
+| `bangasayu-left-normal.11db0394.ktx2` | 4,419,578B |
+| `bangasayu-left-orm.30fa0dd6.ktx2` | 616,057B |
+| `bangasayu-right-color.03f2d332.ktx2` | 1,564,432B |
+| `bangasayu-right-normal.fa591094.ktx2` | 4,429,617B |
+| `bangasayu-right-orm.31123439.ktx2` | 512,679B |
+| 왼쪽 세 장 합계 | **6,642,446B** |
+| 오른쪽 세 장 합계 | **6,506,728B** |
+| 총 여섯 장 합계 | **13,149,174B (약 13.15MB)** |
+
+이번 변경은 완성된 텍스처와 manifest의 연결·업로드이며, 자동 시험·브라우저 실행·실기기 화면 검증 및 Cloudflare 직접 배포는 수행하지 않았다.
