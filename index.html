@@ -121,6 +121,16 @@ prepareStatues();
 
 const experience=createSayuExperience({THREE,canvas,camera,statues,roomSpec:room.spec,constrainPosition:room.constrainPosition,starBrightness:starMat.uniforms.uB,groundHeight:room.groundHeight});
 
+let calibration=null;
+async function syncCalibration(){
+  if(location.hash==='#calib'){
+    const {mountCalibration}=await import('./look-calibration.js');
+    if(location.hash==='#calib'&&!calibration)calibration=mountCalibration(camera,room);
+  }else if(calibration){calibration.close();calibration=null;}
+}
+addEventListener('hashchange',syncCalibration);
+if(location.hash==='#calib')syncCalibration();
+
 /* ---------- 루프 ---------- */
 function resize(){
   const w=innerWidth,h=innerHeight;
@@ -136,6 +146,7 @@ let last=performance.now();
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   experience.update(now,dt);
+  if(calibration)calibration.update();
   if(hq)hq.update(camera.position,dt);else if(!hqRequested)loadNearbyHQ();
   starMat.uniforms.uT.value=now/1000;
   renderer.render(scene,camera);requestAnimationFrame(frame);
