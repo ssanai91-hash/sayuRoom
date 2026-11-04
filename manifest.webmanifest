@@ -1,0 +1,17 @@
+{
+  "name": "사유의 방",
+  "short_name": "사유의 방",
+  "description": "별빛 아래 두 반가사유상 앞에서 절하고 명상하는 고요한 방",
+  "lang": "ko",
+  "start_url": "./?source=homescreen",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#080503",
+  "theme_color": "#080503",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
