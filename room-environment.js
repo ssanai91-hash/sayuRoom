@@ -214,8 +214,10 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
       for(const material of (Array.isArray(o.material)?o.material:[o.material])){
         if(preparedMaterials.has(material))continue;preparedMaterials.add(material);
-        material.envMapIntensity=1.15;material.roughness=Math.max(.36,material.roughness*.84);material.metalness=Math.min(.7,material.metalness+.08);
-        for(const key of ['map','normalMap','roughnessMap','metalnessMap'])if(material[key]){
+        material.envMapIntensity=1.8;
+        // Packed maps already contain the intended per-pixel values. Do not tint them with old scalar overrides.
+        if(!material.userData.sayuPhysicalMaps){material.roughness=.55;material.metalness=.6;}
+        for(const key of ['map','normalMap','roughnessMap','metalnessMap','aoMap'])if(material[key]){
           material[key].anisotropy=Math.min(16,maxAnisotropy);material[key].minFilter=THREE.LinearMipmapLinearFilter;material[key].magFilter=THREE.LinearFilter;material[key].needsUpdate=true;
         }
       }

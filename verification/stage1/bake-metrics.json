@@ -1,0 +1,51 @@
+{
+  "size": 1024,
+  "rays": 128,
+  "radiusMeters": 0.18,
+  "models": [
+    {
+      "texels": 573175,
+      "projected": 573154,
+      "projectionFraction": 0.999963361974964,
+      "aoMin": 0.05999999865889549,
+      "aoMean": 0.7752748131752014,
+      "aoP10": 0.4205225110054016,
+      "side": "left",
+      "originalTriangles": 267636,
+      "targetTriangles": 120000,
+      "originalBytes": 6683816,
+      "newBytes": 7347092,
+      "downloadIncrease": 663276,
+      "ormPngBytes": 662741,
+      "goldCoverage": 0.18050704896450043,
+      "patinaCoverage": 0.08843257278203964,
+      "whiteHighlightPixels": 195,
+      "whiteHighlightGoldMax": 0.030037224292755127,
+      "seconds": 28.82556461200147,
+      "sourceObjSha256": "009977e0bc2b9aa137488caff758e64ef3fab19480fabdecb341be4d8a815318",
+      "glbSha256": "ea9b6c578da3daea2de726b16c133bdd44cce8e46087193e5e3ebbe4cca4e27a"
+    },
+    {
+      "texels": 493184,
+      "projected": 493182,
+      "projectionFraction": 0.9999959447184013,
+      "aoMin": 0.05999999865889549,
+      "aoMean": 0.8119936585426331,
+      "aoP10": 0.487557590007782,
+      "side": "right",
+      "originalTriangles": 266890,
+      "targetTriangles": 120000,
+      "originalBytes": 5913188,
+      "newBytes": 6451332,
+      "downloadIncrease": 538144,
+      "ormPngBytes": 537611,
+      "goldCoverage": 0.28057149052619934,
+      "patinaCoverage": 0.0010165481362491846,
+      "whiteHighlightPixels": 1,
+      "whiteHighlightGoldMax": 0.01267928909510374,
+      "seconds": 22.156354034006654,
+      "sourceObjSha256": "7fa25bc545f2b26198c088a2b3758e1d50bb1c9ca4b1adce176004bd1c8c3e13",
+      "glbSha256": "791f0f4d546225b86136bd0fcbee050568afd3bf0b7088b7999ecbd8afe00f68"
+    }
+  ]
+}
