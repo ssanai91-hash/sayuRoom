@@ -12,3 +12,5 @@
 - 외부 라이브러리는 cdnjs 고정 버전을 사용한다. 모델 출처와 이용조건은 `models/SOURCES.md`에 유지한다. 새 의식은 제안 후 사용자가 결정한다.
 - Cloudflare Worker 이름은 `sayuroom`이다 (대시보드 Worker 이름과 일치해야 GitHub 연결 빌드가 이 주소로 배포됨). 배포 루트는 이 저장소 최상위이며 `npx wrangler deploy`로 최상위 `wrangler.toml`을 사용한다.
 - 예외: KTX2 로더(three.js r128 KTX2Loader를 전역 THREE용으로 묶은 번들)와 Basis 트랜스코더는 `vendor/three-r128/`에서 자체 제공한다(MIT, LICENSE 동봉). 재생성은 `tools/stage2/ktx2-bundle/`. 바꿀 때는 폴더 이름을 바꾼다(1년 캐시).
+
+- main에 반영할 때마다 대문 HTML의 `.gate-version` 번호를 직전 공개 번호에서 한 칸 올린다(여러 커밋을 한 번에 올리면 마지막 커밋에서 한 번). `ver 0.1`, `ver 0.2`, …, `ver 0.9`, `ver 0.10` 순서다. 완료 보고에는 대문 표시와 같은 버전, 짧은 SHA, 접속 링크를 함께 적는다.
