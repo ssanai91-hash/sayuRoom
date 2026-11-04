@@ -105,4 +105,4 @@
 - 2026-11-05 클로드 `models/hq` 4K 색상·노멀 4개가 약 786KB에서 잘려 올라감(이름 해시와 내용 불일치, ORM 2개는 정상). `statue-hq.js`에 나눠 올린 조각 이어 붙이기와 크기·SHA-256 확인 추가. 규격은 ROOM_RENDERING.md '큰 파일 나눠 올리기'. 잘린 파일은 자동으로 거부되어 2K 유지.
 
 - 2026-11-05 GPT · ver 0.6 · 정상 4K 색상·노멀 원본 4개를 700,000B 이하 총 20조각으로 분할하고 잘린 단일 파일 삭제, manifest에 parts·원본 bytes·SHA-256 전체 연결. 원본과 재결합 바이트·크기·해시 확인, ORM 2개 유지, SOURCES 표에 조각 구성 기록.
-- 2026-11-05 클로드 ver 0.7 홈 화면 바로가기: `manifest.webmanifest`(standalone, 이름 '사유의 방'), `icons/`(192·512·maskable 512·apple 180, 어둠·별·빛띠·두 불상 실루엣의 우리 디자인, 사진 미사용), index.html에 manifest·아이콘·theme-color 연결.
+- 2026-11-05 클로드 ver 0.8 형 요청으로 홈 화면 바로가기(ver 0.7, b0e97d8)를 되돌림. manifest·아이콘 제거, 화면은 ver 0.6(159e52f)과 같음. 버전 번호는 규칙대로 올림.
