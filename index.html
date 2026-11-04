@@ -15,7 +15,7 @@
 <canvas id="c" aria-label="사유의 방 3D 공간"></canvas>
 
 <div id="gate">
-  <small class="gate-version" lang="en">ver 0.9</small>
+  <small class="gate-version" lang="en">ver 0.10</small>
   <h1 class="sr-only">사유의 방 — A Room of Quiet Contemplation</h1>
   <div class="gate-visual" aria-hidden="true">
     <img class="gate-art" src="assets/entrance-wall.webp" width="1086" height="1448" alt="" fetchpriority="high" decoding="async">
@@ -28,7 +28,8 @@
   </div>
 </div>
 
-<div id="hint">끌어서 둘러보기 · 불상을 누르면 그 앞으로 걸어갑니다</div>
+<!-- 머무는 사람 수: 함께 있음 서버가 생기면 #presenceCount 숫자를 갱신한다 -->
+<div id="presence" hidden>지금 <span id="presenceCount">0</span>명이 이곳에 머물고 있습니다.</div>
 <div id="toast"></div>
 
 <div id="pad" hidden>

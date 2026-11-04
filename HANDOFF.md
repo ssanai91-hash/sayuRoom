@@ -107,3 +107,4 @@
 - 2026-11-05 GPT · ver 0.6 · 정상 4K 색상·노멀 원본 4개를 700,000B 이하 총 20조각으로 분할하고 잘린 단일 파일 삭제, manifest에 parts·원본 bytes·SHA-256 전체 연결. 원본과 재결합 바이트·크기·해시 확인, ORM 2개 유지, SOURCES 표에 조각 구성 기록.
 - 2026-11-05 클로드 ver 0.8 형 요청으로 홈 화면 바로가기(ver 0.7, b0e97d8)를 되돌림. manifest·아이콘 제거, 화면은 ver 0.6(159e52f)과 같음. 버전 번호는 규칙대로 올림.
 - 2026-11-05 클로드 ver 0.9 입장 때마다 13MB를 다시 받던 문제: `models/models.json`(GLB 크기·SHA-256)을 매번 확인하고 GLB를 `?v=해시`로 불러 기기 보관함(Cache Storage `sayu-assets-v1`)에 저장, 두 번째부터는 다운로드 없이 바로 입장. 고화질 KTX2도 같은 보관함 사용(확인 실패 조각은 삭제). `_headers`에 GLB 1년·models.json no-cache 추가. 옛 GLB 버전은 자동 정리. GLB 변경 시 `tools/update_models_json.py` 필수(AGENTS).
+- 2026-11-05 클로드 ver 0.10 형 요청: 맨 위 출처 아래 안내 문장(끌어서 둘러보기…) 삭제, 그 줄 오른쪽에 '지금 0명이 이곳에 머물고 있습니다.'(`#presence`, 숫자는 `#presenceCount`). 입장 후 표시, 절·명상 중 숨김. 함께 있음 서버가 아직 없어 숫자는 0 고정.

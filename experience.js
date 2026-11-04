@@ -102,7 +102,7 @@ function knock(){ // 절할 때 바닥에 닿는 작은 목탁 소리
 
 /* ---------- 연출 ---------- */
 function toast(txt,ms=2600){const el=$('#toast');el.textContent=txt;el.style.opacity=1;clearTimeout(toast._t);toast._t=setTimeout(()=>el.style.opacity=0,ms);}
-function showUI(v){for(const id of ['#bar','#pad','#hint'])$(id).style.opacity=v?1:0;$('#bar').style.pointerEvents=v?'auto':'none';$('#pad').style.pointerEvents=v?'auto':'none';}
+function showUI(v){for(const id of ['#bar','#pad','#presence'])$(id).style.opacity=v?1:0;$('#bar').style.pointerEvents=v?'auto':'none';$('#pad').style.pointerEvents=v?'auto':'none';}
 
 async function bowOnce(){
   const p0=st.pitch;
@@ -156,9 +156,8 @@ $('#enter').addEventListener('click',async()=>{
   setTimeout(()=>bowl(.8),1600);
   await tween({z:view.entryZ,pitch:view.entryPitch},6.5);
   locked=false;$('#bar').hidden=false;$('#pad').hidden=false;showUI(true);
-  setTimeout(()=>$('#hint').style.opacity=0,9000);
+  $('#presence').hidden=false;
 });
-$('#hint').style.opacity=0;
 
 
 document.addEventListener('visibilitychange',async()=>{
