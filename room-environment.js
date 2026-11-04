@@ -3,7 +3,7 @@
 const SAYU_ROOM_SPEC=Object.freeze({
   outline:Object.freeze([[-3.6,-13],[3.6,-13],[5.5,10],[4.4,14],[-4.4,14],[-5.5,10]]),
   wallHeight:4.2,
-  view:Object.freeze({startZ:12.8,entryZ:11.4,entryPitch:.03,walkSpeed:1,approachDistance:1.45,portraitFov:72,landscapeFov:58}),
+  view:Object.freeze({startZ:12.8,entryZ:11.4,entryPitch:.03,walkSpeed:1.5,approachDistance:1.45,portraitFov:72,landscapeFov:58}),
   platform:Object.freeze({radiusX:3.3,radiusZ:2.7,centerZ:-9.5,height:.12}),
   ceilingLights:Object.freeze({width:5,depth:2.7,centerZ:-9.75,loopCount:96,backgroundSpacing:.22}),
   pedestals:Object.freeze([
