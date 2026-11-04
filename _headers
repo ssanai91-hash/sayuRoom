@@ -4,3 +4,8 @@
   Cache-Control: public, max-age=31536000, immutable
 /vendor/three-r128/*
   Cache-Control: public, max-age=31536000, immutable
+# 불상 GLB는 models/models.json의 해시를 ?v=로 붙여 부르므로 1년 캐시한다. models.json은 매번 확인.
+/models/*.glb
+  Cache-Control: public, max-age=31536000, immutable
+/models/models.json
+  Cache-Control: no-cache

@@ -15,7 +15,7 @@
 <canvas id="c" aria-label="사유의 방 3D 공간"></canvas>
 
 <div id="gate">
-  <small class="gate-version" lang="en">ver 0.8</small>
+  <small class="gate-version" lang="en">ver 0.9</small>
   <h1 class="sr-only">사유의 방 — A Room of Quiet Contemplation</h1>
   <div class="gate-visual" aria-hidden="true">
     <img class="gate-art" src="assets/entrance-wall.webp" width="1086" height="1448" alt="" fetchpriority="high" decoding="async">
@@ -105,15 +105,20 @@ enter.disabled=true;
 const status=document.querySelector('#modelStatus');
 async function prepareStatues(){
   enter.disabled=true;status.textContent='두 반가사유상을 모시는 중 · 0%';
-  // 두 모델 합계 약 12.6MB. 크기 정보가 없을 때도 받은 양은 보여준다.
-  const EST=[6683816,5913188],got=[0,0],tot=[0,0];
+  // models/models.json(아주 작음, 매번 확인)에 각 GLB의 내용 해시가 있다. 주소에 ?v=해시를 붙여
+  // 한 번 받은 모델은 기기 보관함에서 바로 꺼내 쓰고, 모델이 바뀌면 해시가 바뀌어 새로 받는다.
+  let list=[{file:'bangasayu-left.glb',bytes:7347092},{file:'bangasayu-right.glb',bytes:6451332}];
+  try{const r=await fetch('models/models.json',{cache:'no-cache'});if(r.ok)list=(await r.json()).statues;}catch(_){}
+  const urls=list.map(m=>'models/'+m.file+(m.sha256?'?v='+m.sha256.slice(0,8):''));
+  const EST=list.map(m=>m.bytes||6500000),got=[0,0],tot=[0,0];
   const prog=i=>(g,t)=>{got[i]=g;tot[i]=t||EST[i];
     const all=tot[0]+tot[1]||EST[0]+EST[1],sum=got[0]+got[1];
     status.textContent='두 반가사유상을 모시는 중 · '+Math.min(99,Math.floor(sum/all*100))+'% ('+(sum/1048576).toFixed(1)+' / '+(all/1048576).toFixed(1)+'MB)';};
   try{
-    const [left,right]=await Promise.all([loadSayuStatue('models/bangasayu-left.glb',prog(0)),loadSayuStatue('models/bangasayu-right.glb',prog(1))]);
+    const [left,right]=await Promise.all([loadSayuStatue(urls[0],prog(0)),loadSayuStatue(urls[1],prog(1))]);
     await room.ready;
     room.addStatue(left,0);room.addStatue(right,1);hqModels=[left,right];
+    sayuPruneCache(urls);
     status.textContent='';enter.disabled=false;document.querySelector('#retryModels').hidden=true;
   }catch(error){status.textContent='불상을 불러오지 못했습니다 ('+(error&&error.message||error)+'). 다시 시도해 주세요.';document.querySelector('#retryModels').hidden=false;console.error(error);}
 }

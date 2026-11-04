@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "note": "GLB를 바꾸면 python3 tools/update_models_json.py 를 실행해 해시를 갱신한다",
+  "statues": [
+    {
+      "side": "left",
+      "file": "bangasayu-left.glb",
+      "bytes": 7347092,
+      "sha256": "ea9b6c578da3daea2de726b16c133bdd44cce8e46087193e5e3ebbe4cca4e27a"
+    },
+    {
+      "side": "right",
+      "file": "bangasayu-right.glb",
+      "bytes": 6451332,
+      "sha256": "791f0f4d546225b86136bd0fcbee050568afd3bf0b7088b7999ecbd8afe00f68"
+    }
+  ]
+}

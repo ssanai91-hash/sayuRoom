@@ -55,14 +55,19 @@ function createSayuHQ({THREE,renderer,statues,isBusy=()=>false,base='models/hq/'
   // 받은 바이트는 크기·SHA-256으로 확인한다(이름 해시 8자리 또는 sha256 전체). 잘린 파일은 쓰지 않는다.
   async function fetchBytes(spec){
     const parts=typeof spec==='string'?[spec]:spec.parts;
-    const buffers=await Promise.all(parts.map(async p=>{const r=await fetch(base+p);if(!r.ok)throw new Error(p+' '+r.status);return r.arrayBuffer();}));
+    const hashOf=p=>(p.match(/\.([0-9a-f]{8})\.(?:p\d+\.)?ktx2$/)||[])[1];
+    const buffers=await Promise.all(parts.map(async p=>{const h=hashOf(p),url=base+p+(h?'?v='+h:'');
+      if(typeof sayuCachedFetch==='function')return (await sayuCachedFetch(url)).bytes;
+      const r=await fetch(url);if(!r.ok)throw new Error(p+' '+r.status);return r.arrayBuffer();}));
+    // 잘못 받은(잘린) 조각이 보관함에 남지 않게, 확인 실패 시 지운다.
+    const dropCached=async()=>{try{const c=await caches.open(SAYU_CACHE);for(const p of parts){const h=hashOf(p);await c.delete(base+p+(h?'?v='+h:''));}}catch(_){}};
     const total=buffers.reduce((s,b)=>s+b.byteLength,0),bytes=new Uint8Array(total);let o=0;
     for(const b of buffers){bytes.set(new Uint8Array(b),o);o+=b.byteLength;}
-    if(spec.bytes&&total!==spec.bytes)throw new Error('크기 불일치 '+total+'≠'+spec.bytes);
+    if(spec.bytes&&total!==spec.bytes){await dropCached();throw new Error('크기 불일치 '+total+'≠'+spec.bytes);}
     const want=(typeof spec==='string'?(spec.match(/\.([0-9a-f]{8})\.ktx2$/)||[])[1]:spec.sha256)||'';
     if(want&&crypto.subtle){
       const hex=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
-      if(!hex.startsWith(want.toLowerCase()))throw new Error('해시 불일치 '+hex.slice(0,8)+'≠'+want.slice(0,8));
+      if(!hex.startsWith(want.toLowerCase())){await dropCached();throw new Error('해시 불일치 '+hex.slice(0,8)+'≠'+want.slice(0,8));}
     }
     return bytes;
   }
