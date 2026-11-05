@@ -182,6 +182,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   let environmentTarget=null;
   function rebuildEnvironment(){
     if(!environment||typeof document==='undefined')return;
+    const reflection=look.reflectionEnvironment||{base:[8,9,10],band:[84,80,74],softbox:[170,182,196]};
     const directions=[(u,v)=>[1,-v,-u],(u,v)=>[-1,-v,u],(u,v)=>[u,1,v],(u,v)=>[u,-1,-v],(u,v)=>[u,-v,1],(u,v)=>[-u,-v,-1]];
     const faces=directions.map(direction=>{
       const c=document.createElement('canvas');c.width=c.height=256;
@@ -189,11 +190,12 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
       for(let y=0;y<256;y++)for(let x=0;x<256;x++){
         const d=new THREE.Vector3(...direction((x+.5)/128-1,(y+.5)/128-1)).normalize();
         const band=Math.exp(-Math.pow((d.y-.23)/.13,2));
-        const softbox=Math.pow(Math.max(0,d.dot(new THREE.Vector3(.2,.85,.48).normalize())),64);
+        const softbox=Math.pow(Math.max(0,d.dot(new THREE.Vector3(-.35,.80,.45).normalize())),64);
         const i=(y*256+x)*4;
-        data.data[i]=Math.min(255,12+band*126+softbox*150);
-        data.data[i+1]=Math.min(255,10+band*91+softbox*151);
-        data.data[i+2]=Math.min(255,9+band*62+softbox*154);data.data[i+3]=255;
+        for(let channel=0;channel<3;channel++){
+          data.data[i+channel]=Math.min(255,reflection.base[channel]+band*reflection.band[channel]+softbox*reflection.softbox[channel]);
+        }
+        data.data[i+3]=255;
       }
       context.putImageData(data,0,0);return c;
     });
@@ -211,8 +213,8 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   renderer.shadowMap.autoUpdate=false;
   // 벽의 따뜻한 간접광이 바닥에도 부드럽게 닿도록 넓고 약한 반사광을 더한다.
   for(const z of [-7,6]){const bounce=new THREE.PointLight(look.room.bounceColor,look.room.bounce,19,1.8);bounce.position.set(0,3.5,z);scene.add(bounce);}
-  const pedestalMaterial=new THREE.MeshPhysicalMaterial({color:new THREE.Color(look.pedestal.color).convertSRGBToLinear(),roughness:look.pedestal.roughness,metalness:.04,clearcoat:.1,clearcoatRoughness:.65,envMapIntensity:look.pedestal.reflection});
-  const pedestalTopMaterial=new THREE.MeshPhysicalMaterial({color:new THREE.Color(look.pedestalTop.color).convertSRGBToLinear(),roughness:look.pedestalTop.roughness,metalness:.12,envMapIntensity:look.pedestalTop.reflection});
+  const pedestalMaterial=new THREE.MeshPhysicalMaterial({color:new THREE.Color(look.pedestal.color).convertSRGBToLinear(),roughness:look.pedestal.roughness,metalness:look.pedestal.metalness??0,reflectivity:look.pedestal.reflectivity??.08,clearcoat:0,envMapIntensity:look.pedestal.reflection});
+  const pedestalTopMaterial=new THREE.MeshPhysicalMaterial({color:new THREE.Color(look.pedestalTop.color).convertSRGBToLinear(),roughness:look.pedestalTop.roughness,metalness:look.pedestalTop.metalness??0,reflectivity:look.pedestalTop.reflectivity??.10,clearcoat:0,envMapIntensity:look.pedestalTop.reflection});
   function roundPedestal(diameter,height){
     const r=diameter/2,b=.004;
     const profile=[new THREE.Vector2(0,0),new THREE.Vector2(r-b,0),new THREE.Vector2(r,b),
@@ -225,10 +227,20 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   }
   // Three r128 clone()은 재질 생성자를 유지한다. 2K·4K 및 교체 중 겹치는 재질에 같은 보정을 쓴다.
   const gloss={value:new THREE.Vector4()},ao={value:look.statue.ao};
+  const colorProfiles=spec.pedestals.map(()=>({tint:{value:new THREE.Vector3(1,1,1)},tone:{value:new THREE.Vector4(1,1,1,0)}}));
   class StatueMaterial extends THREE.MeshStandardMaterial {
+    customProgramCacheKey(){return 'sayu-bronze-color-v1-'+(this.userData.sayuStatueIndex??0);}
     onBeforeCompile(shader){
+      const profile=colorProfiles[this.userData.sayuStatueIndex??0];
+      shader.uniforms.sayuTint=profile.tint;shader.uniforms.sayuTone=profile.tone;
       shader.uniforms.sayuRough=gloss;shader.uniforms.sayuAO=ao;
-      shader.fragmentShader='uniform vec4 sayuRough;uniform float sayuAO;\n'+shader.fragmentShader
+      shader.fragmentShader='uniform vec4 sayuRough;uniform float sayuAO;uniform vec3 sayuTint;uniform vec4 sayuTone;\n'+shader.fragmentShader
+        .replace('#include <map_fragment>',THREE.ShaderChunk.map_fragment+`
+          float scanLuma=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722));
+          vec3 scanColor=mix(vec3(scanLuma),diffuseColor.rgb,sayuTone.x);
+          vec3 bronzeTint=mix(sayuTint,vec3(1.),smoothstep(.28,.72,scanLuma)*sayuTone.w);
+          diffuseColor.rgb=max(vec3(0.),scanColor*bronzeTint*sayuTone.y);`)
+        .replace('#include <metalnessmap_fragment>',THREE.ShaderChunk.metalnessmap_fragment+'\n metalnessFactor*=sayuTone.z;')
         .replace('#include <roughnessmap_fragment>',THREE.ShaderChunk.roughnessmap_fragment+`
           #ifdef USE_ROUGHNESSMAP
           float r=roughnessFactor;
@@ -248,7 +260,9 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   function setRig(rig){
     for(const name of ['key','rim','fill']){
       const lamp=rig[name],v=look.lights[name],[x,y,z]=v.position;
-      lamp.color.copy(lightColor(v.kelvin));lamp.intensity=v.intensity;lamp.angle=v.angle;
+      lamp.color.copy(lightColor(v.kelvin));
+      if(v.tint){lamp.color.r*=v.tint[0];lamp.color.g*=v.tint[1];lamp.color.b*=v.tint[2];}
+      lamp.intensity=v.intensity;lamp.angle=v.angle;
       lamp.penumbra=v.penumbra??(name==='key'?.38:.55);
       lamp.position.set(rig.s.x+x,y,rig.s.z+z);
       const targetFraction=v.targetHeight??(name==='key'?.62:name==='rim'?.55:.72);
@@ -265,7 +279,16 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     c.uBackground.value=look.ceiling.backgroundBrightness/.685;c.uColor.value.fromArray(look.ceiling.pointColor);
     for(const [material,v] of [[floor.material,look.floor],[platform.material[1],look.platform],[pedestalMaterial,look.pedestal],[pedestalTopMaterial,look.pedestalTop]]){
       material.envMapIntensity=v.reflection;material.roughness=v.roughness;
+      if(material===pedestalMaterial||material===pedestalTopMaterial){
+        material.color.set(v.color).convertSRGBToLinear();
+        material.metalness=v.metalness??0;material.reflectivity=v.reflectivity??.1;material.clearcoat=0;
+      }
     }
+    colorProfiles.forEach((uniforms,index)=>{
+      const profile=look.statue.colorProfiles?.[index];
+      uniforms.tint.value.fromArray(profile?.tint||[1,1,1]);
+      uniforms.tone.value.set(profile?.saturation??1,profile?.gain??1,profile?.metalness??1,profile?.neutralHighlights??0);
+    });
     gloss.value.fromArray([...look.statue.goldRoughness,...look.statue.patinaRoughness]);ao.value=look.statue.ao;
     for(const model of models)model.traverse(o=>{if(o.isMesh)for(const m of [].concat(o.material))m.envMapIntensity=look.statue.reflection;});
     rigs.forEach(setRig);refreshShadows();
@@ -296,6 +319,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     function prepare(source){
         if(prepared.has(source))return prepared.get(source);
         const material=new StatueMaterial().copy(source);
+        material.userData.sayuStatueIndex=index;
         prepared.set(source,material);source.dispose();
         material.envMapIntensity=look.statue.reflection;
         if(!material.userData.sayuPhysicalMaps){material.roughness=.55;material.metalness=.6;}

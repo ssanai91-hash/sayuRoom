@@ -28,7 +28,11 @@ export function mountCalibration(camera,room){
     ['8자 밝기','ceiling.loopBrightness',.2,2,.01],['8자 크기 (m)','ceiling.loopSize',.01,.08,.001],
     ['배경 점광','ceiling.backgroundBrightness',.1,1,.01],['환경 반사','statue.reflection',.4,2.5,.01],
     ['접촉 음영','statue.ao',0,1.4,.01],['바닥 거칠기','floor.roughness',.2,1,.01],
-    ['받침 윗면 반사','pedestalTop.reflection',0,1.4,.01]
+    ['받침 윗면 반사','pedestalTop.reflection',0,1.4,.01],
+    ['원통 옆면 거칠기','pedestal.roughness',.5,1,.01],['원통 옆면 광택','pedestal.reflectivity',0,.5,.01],
+    ['오른쪽 청동 채도','statue.colorProfiles.1.saturation',0,1,.01],
+    ['오른쪽 청동 밝기','statue.colorProfiles.1.gain',.5,1.4,.01],
+    ['오른쪽 청동 붉은기','statue.colorProfiles.1.tint.0',.4,1.2,.01]
   ];
   for(const [name,title] of [['key','주광'],['rim','윤곽광'],['fill','보조광']]){
     controls.push([title+' 세기','lights.'+name+'.intensity',0,14,.05],
