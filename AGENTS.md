@@ -15,3 +15,5 @@
 
 - main에 반영할 때마다 대문 HTML의 `.gate-version` 번호를 직전 공개 번호에서 한 칸 올린다(여러 커밋을 한 번에 올리면 마지막 커밋에서 한 번). `ver 0.1`, `ver 0.2`, …, `ver 0.9`, `ver 0.10` 순서다. 완료 보고에는 대문 표시와 같은 버전, 짧은 SHA, 접속 링크를 함께 적는다.
 - 불상 GLB(`models/bangasayu-*.glb`)를 바꾸면 반드시 `python3 tools/update_models_json.py`로 `models/models.json` 해시를 갱신해 같은 커밋에 넣는다. 앱은 이 해시로 기기 보관함·1년 캐시를 쓰므로 빠뜨리면 방문자에게 옛 모델이 남는다.
+
+- 서버 코드는 `worker/`, 방은 `sayu-room-main` 하나이며 숫자만 주고받는다. 개인 정보 저장 금지; 무작위 탭 ID는 연결 수명 동안 중복 제거에만 사용하고 DB·로그에 기록하지 않는다.
