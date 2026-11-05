@@ -1,7 +1,18 @@
 # 사유의 방만 서비스하는 독립 Worker. 정원의 설정·서버·저장소와 분리.
 name = "sayuroom"
+main = "worker/index.js"
 compatibility_date = "2026-09-01"
 
 [assets]
 directory = "."
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
 not_found_handling = "404-page"
+
+[[durable_objects.bindings]]
+name = "PRESENCE"
+class_name = "SayuPresence"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SayuPresence"]
