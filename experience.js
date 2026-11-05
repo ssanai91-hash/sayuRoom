@@ -104,20 +104,70 @@ function knock(){ // 절할 때 바닥에 닿는 작은 목탁 소리
 function toast(txt,ms=2600){const el=$('#toast');el.textContent=txt;el.style.opacity=1;clearTimeout(toast._t);toast._t=setTimeout(()=>el.style.opacity=0,ms);}
 function showUI(v){for(const id of ['#bar','#pad','#presence'])$(id).style.opacity=v?1:0;$('#bar').style.pointerEvents=v?'auto':'none';$('#pad').style.pointerEvents=v?'auto':'none';}
 
-async function bowOnce(){
-  const p0=st.pitch;
-  await tween({eye:1.05,pitch:-.1},1.5);
-  await tween({eye:.55,pitch:-1.05},1.8);
-  knock();
-  await wait(1500);
-  await tween({eye:1.0,pitch:-.25},1.5);
-  await tween({eye:1.6,pitch:p0},1.5);
+// 화면이 멈춰도 시작 시각에서 현재 자세와 마친 횟수를 다시 계산한다.
+// 각 단계의 길이는 기존 절하기와 같다: 1.5 + 1.8 + 1.5 + 1.5 + 1.5 + 0.4초.
+const BOW_KEY='sayu-bow-v1',BOW_CYCLE=8200;
+let bowSession=null,lastBowElapsed=null;
+function readBowSession(){
+  try{
+    const saved=JSON.parse(sessionStorage.getItem(BOW_KEY));
+    if(!saved)return null;
+    if(saved.version!==1||![1,3,108].includes(saved.target)||!Number.isFinite(saved.startedAt)||saved.startedAt<=0||saved.startedAt>Date.now()+1000||
+      !saved.pose||!['x','z','yaw','pitch','eye'].every(k=>Number.isFinite(saved.pose[k]))||saved.pose.eye!==1.6||Math.abs(saved.pose.pitch)>1.2){
+      sessionStorage.removeItem(BOW_KEY);return null;
+    }
+    return saved;
+  }catch(_){return null;}
 }
-async function bow(n){
-  if(locked)return;locked=true;resetInput();showUI(false);
-  for(let i=0;i<n;i++){if(n>1)toast(['일배','이배','삼배'][i],2000);await bowOnce();await wait(400);}
-  bowl(.7);locked=false;showUI(true);
+function saveBowSession(){try{sessionStorage.setItem(BOW_KEY,JSON.stringify(bowSession));}catch(_){} }
+function finishBow(done){
+  if(!bowSession)return;
+  const session=bowSession;bowSession=null;lastBowElapsed=null;
+  try{sessionStorage.removeItem(BOW_KEY);}catch(_){}
+  st.eye=session.pose.eye;st.pitch=session.pose.pitch;
+  $('#bowing').hidden=true;locked=false;resetInput();showUI(true);
+  if(done){bowl(.7);toast(session.target+'배를 마쳤습니다',3500);}
+  const button=session.target===108?'#bBow108':session.target===3?'#bBow3':'#bBow';
+  $(button).focus({preventScroll:true});
 }
+function updateBow(silent=false){
+  if(!bowSession)return;
+  const elapsed=Math.max(0,Date.now()-bowSession.startedAt),total=bowSession.target*BOW_CYCLE;
+  const completed=Math.min(bowSession.target,Math.floor(elapsed/BOW_CYCLE));
+  const label=completed+' / '+bowSession.target+'배';
+  if($('#bowCount').textContent!==label)$('#bowCount').textContent=label;
+  if(elapsed>=total){
+    // 화면이 꺼진 동안 끝나면 완료 안내·소리는 돌아왔을 때 한 번만 낸다.
+    if(!document.hidden)finishBow(true);
+    return;
+  }
+  const phase=elapsed%BOW_CYCLE,p0=bowSession.pose.pitch;
+  let from,to,progress;
+  if(phase<1500){from={eye:1.6,pitch:p0};to={eye:1.05,pitch:-.1};progress=phase/1500;}
+  else if(phase<3300){from={eye:1.05,pitch:-.1};to={eye:.55,pitch:-1.05};progress=(phase-1500)/1800;}
+  else if(phase<4800){from=to={eye:.55,pitch:-1.05};progress=0;}
+  else if(phase<6300){from={eye:.55,pitch:-1.05};to={eye:1,pitch:-.25};progress=(phase-4800)/1500;}
+  else if(phase<7800){from={eye:1,pitch:-.25};to={eye:1.6,pitch:p0};progress=(phase-6300)/1500;}
+  else{from=to={eye:1.6,pitch:p0};progress=0;}
+  const k=ease(progress);st.eye=from.eye+(to.eye-from.eye)*k;st.pitch=from.pitch+(to.pitch-from.pitch)*k;
+  // 복귀 때 지나간 목탁 소리를 몰아서 재생하지 않는다.
+  if(!silent&&!document.hidden&&lastBowElapsed!==null&&elapsed-lastBowElapsed>=0&&elapsed-lastBowElapsed<600&&
+    Math.floor(lastBowElapsed/BOW_CYCLE)===Math.floor(elapsed/BOW_CYCLE)&&lastBowElapsed%BOW_CYCLE<3300&&phase>=3300)knock();
+  lastBowElapsed=elapsed;
+}
+function beginBow(session){
+  bowSession=session;lastBowElapsed=null;locked=true;resetInput();showUI(false);
+  Object.assign(st,session.pose);clampPos();
+  $('#bowing').hidden=false;$('#bowStop').focus({preventScroll:true});
+  updateBow(true);
+}
+function bow(n){
+  if(locked||bowSession)return;
+  const session={version:1,target:n,startedAt:Date.now(),pose:{x:st.x,z:st.z,yaw:st.yaw,pitch:st.pitch,eye:1.6}};
+  beginBow(session);saveBowSession();
+}
+function restoreBow(){const session=readBowSession();if(session)beginBow(session);}
+$('#bowStop').addEventListener('click',()=>finishBow(false));
 
 /* 명상 */
 let med=null;let wakeLock=null;
@@ -142,6 +192,7 @@ $('#mStop').addEventListener('click',()=>endMed(false));
 /* 버튼 */
 $('#bBow').addEventListener('click',()=>bow(1));
 $('#bBow3').addEventListener('click',()=>bow(3));
+$('#bBow108').addEventListener('click',()=>bow(108));
 $('#bMed').addEventListener('click',()=>{if(!locked){locked=true;resetInput();$('#pick').hidden=false;$('#pickCancel').focus();}});
 $('#pickCancel').addEventListener('click',()=>{ $('#pick').hidden=true;locked=false;$('#bMed').focus(); });
 document.querySelectorAll('#pick [data-min]').forEach(b=>b.addEventListener('click',()=>startMed(+b.dataset.min)));
@@ -157,18 +208,21 @@ $('#enter').addEventListener('click',async()=>{
   await tween({z:view.entryZ,pitch:view.entryPitch},6.5);
   locked=false;$('#bar').hidden=false;$('#pad').hidden=false;showUI(true);
   $('#presence').hidden=false;
+  restoreBow();
 });
 
 
 document.addEventListener('visibilitychange',async()=>{
   if(document.hidden){if(ac)ac.suspend().catch(()=>{});return;}
   if(ac&&soundOn)ac.resume().catch(()=>{});
+  updateBow(true);applyCam();
   if(med&&med.end>Date.now()){
     try{if(!wakeLock||wakeLock.released)wakeLock=await navigator.wakeLock?.request('screen');}catch(e){}
   }
 });
 
 return {update(now,dt){
+  updateBow();
   for(let i=tweens.length-1;i>=0;i--){const tw=tweens[i];tw.t+=dt/tw.dur;const k=tw.easing(Math.min(1,tw.t));
     for(const p in tw.props)st[p]=tw.from[p]+(tw.props[p]-tw.from[p])*k;
     if(tw.t>=1){tweens.splice(i,1);tw.res();}}

@@ -15,7 +15,7 @@
 <canvas id="c" aria-label="사유의 방 3D 공간"></canvas>
 
 <div id="gate">
-  <small class="gate-version" lang="en">ver 0.12</small>
+  <small class="gate-version" lang="en">ver 0.13</small>
   <h1 class="sr-only">사유의 방 — A Room of Quiet Contemplation</h1>
   <div class="gate-visual" aria-hidden="true">
     <img class="gate-art" src="assets/entrance-wall.webp" width="1086" height="1448" alt="" fetchpriority="high" decoding="async">
@@ -40,11 +40,17 @@
   <div class="row">
     <button id="bBow">절하기</button>
     <button id="bBow3">삼배</button>
+    <button id="bBow108">108배</button>
     <span class="sep"></span>
     <button id="bMed">명상</button>
     <span class="sep"></span>
     <button id="bSnd" aria-pressed="true">소리</button>
   </div>
+</div>
+
+<div id="bowing" hidden>
+  <div id="bowCount" role="status" aria-live="off" aria-label="마친 절 횟수">0 / 108배</div>
+  <button class="btn" id="bowStop">절 마치기</button>
 </div>
 
 <div id="pick" hidden>
