@@ -118,6 +118,8 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   wallGeo.setIndex(wallIndices);wallGeo.computeVertexNormals();
   const wall=new THREE.Mesh(wallGeo,wallMat);
   wall.name='warm-plaster-cove-wall';scene.add(wall);
+  const wallPlaque=createSayuWallPlaque({THREE,scene,outline:spec.outline,floorHeight});
+  pending.push(wallPlaque.ready);
   // 바닥과 같은 평면을 위에 두고 아래에서 보이도록 뒷면을 그린다(뒤집으면 앞뒤가 바뀐다).
   const ceiling=new THREE.Mesh(ceilingGeo,new THREE.MeshBasicMaterial({color:look.ceiling.color,side:THREE.BackSide}));
   ceiling.name='black-ceiling';ceiling.position.y=spec.wallHeight+.02;scene.add(ceiling);
@@ -297,6 +299,6 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     renderer.shadowMap.needsUpdate=true;return item;
   }
   function groundHeight(x,z){return (x*x/(p.radiusX*p.radiusX)+(z-p.centerZ)*(z-p.centerZ)/(p.radiusZ*p.radiusZ))<1?p.height:floorHeight(z);}
-  return {spec,statues,starMaterial,applyLook,addStatue,groundHeight,constrainPosition,ready:Promise.all(pending)};
+  return {spec,statues,starMaterial,wallPlaque,applyLook,addStatue,groundHeight,constrainPosition,ready:Promise.all(pending)};
 }
 if(typeof module!=='undefined')module.exports={SAYU_ROOM_SPEC,createSayuEnvironment};
