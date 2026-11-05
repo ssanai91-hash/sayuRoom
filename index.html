@@ -72,6 +72,7 @@
 <script src="statue-hq.js"></script>
 <script src="room-environment.js"></script>
 <script src="experience.js"></script>
+<script src="presence.js"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -102,6 +103,7 @@ function loadNearbyHQ(){
 }
 
 const enter=document.querySelector('#enter');
+enter.addEventListener('click',()=>{if(!enter.disabled)window.SayuPresence.start();},true);
 enter.disabled=true;
 const status=document.querySelector('#modelStatus');
 async function prepareStatues(){
