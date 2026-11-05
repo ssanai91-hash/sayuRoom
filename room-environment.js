@@ -118,7 +118,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   wallGeo.setIndex(wallIndices);wallGeo.computeVertexNormals();
   const wall=new THREE.Mesh(wallGeo,wallMat);
   wall.name='warm-plaster-cove-wall';scene.add(wall);
-  const wallPlaque=createSayuWallPlaque({THREE,scene,outline:spec.outline,floorHeight});
+  const wallPlaque=createSayuWallPlaque({THREE,scene,renderer,outline:spec.outline,floorHeight});
   pending.push(wallPlaque.ready);
   // 바닥과 같은 평면을 위에 두고 아래에서 보이도록 뒷면을 그린다(뒤집으면 앞뒤가 바뀐다).
   const ceiling=new THREE.Mesh(ceilingGeo,new THREE.MeshBasicMaterial({color:look.ceiling.color,side:THREE.BackSide}));

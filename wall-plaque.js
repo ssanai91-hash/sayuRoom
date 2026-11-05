@@ -1,5 +1,5 @@
-/* 오른쪽 중간 벽의 쇠판. 글자는 첨부 사진에서 추출한 윤곽을 실제 양각으로 만든다. */
-function createSayuWallPlaque({THREE,scene,outline,floorHeight}){
+/* 오른쪽 중간 벽의 쇠판. 원본 사진의 글씨·색·양각 음영을 그대로 사용한다. */
+function createSayuWallPlaque({THREE,scene,renderer,outline,floorHeight}){
   // 오른쪽의 긴 직선 벽을 골라 그 중간에 밀착한다. 방 외곽선을 바꾸면 위치도 함께 따라간다.
   const candidates=outline.map((a,i)=>{
     const b=outline[(i+1)%outline.length],dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz);
@@ -28,46 +28,32 @@ function createSayuWallPlaque({THREE,scene,outline,floorHeight}){
 
   const steel=new THREE.MeshStandardMaterial({color:new THREE.Color(0x353638).convertSRGBToLinear(),
     metalness:.52,roughness:.73,envMapIntensity:.45});
-  // 미세한 금속 입자 결을 코드로 표현하고 이 방의 실제 조명·반사를 받는다.
-  steel.onBeforeCompile=shader=>{
-    shader.vertexShader='varying vec2 vPlate;\n'+shader.vertexShader.replace('#include <begin_vertex>',
-      '#include <begin_vertex>\n vPlate=position.xy;');
-    shader.fragmentShader='varying vec2 vPlate;\n'+shader.fragmentShader.replace('#include <color_fragment>',
-      `#include <color_fragment>
-       float grain=fract(sin(dot(floor(vPlate*1700.),vec2(127.1,311.7)))*43758.5453);
-       float brushed=.5+.5*sin(vPlate.y*2400.+sin(vPlate.x*71.)*.5);
-       diffuseColor.rgb*=.945+.085*grain+.025*brushed;`);
-  };
   const plate=new THREE.Mesh(new THREE.ExtrudeGeometry(outlineShape,{depth,steps:1,curveSegments:3,
     bevelEnabled:true,bevelThickness:.0025,bevelSize:.0025,bevelSegments:2}),steel);
   plate.name='dark-steel-wall-plaque';group.add(plate);
   group.userData={text:['두루 헤아리며,','깊은 생각에 잠기는 시간','—','Time to lose yourself','deep in wandering thought'],
-    width,height,letterRelief:.0032,source:'사용자 첨부 1000051847.jpg의 글자 윤곽'};
+    width,height,source:'사용자 첨부 1000051847.jpg 원본',sourcePixels:[300,150,1140,836]};
 
-  // 이 판만 은은하게 비추는 상부 조명. 별도 그림자 맵은 만들지 않는다.
-  const light=new THREE.SpotLight(0xffefdb,2.8,4.5,.85,.95,1.4);
-  light.position.set(-.42,.9,1.6);light.target.position.set(0,0,.02);
-  group.add(light,light.target);
-
-  const ready=fetch('assets/wall-plaque-lettering.json').then(response=>{
-    if(!response.ok)throw new Error('plaque lettering '+response.status);
-    return response.json();
-  }).then(data=>{
-    const shapes=data.shapes.map(item=>{
-      const shape=new THREE.Shape(item.outer.map(([x,y])=>new THREE.Vector2(x,y)));
-      for(const ring of item.holes)shape.holes.push(new THREE.Path(ring.map(([x,y])=>new THREE.Vector2(x,y))));
-      return shape;
-    });
-    const brass=new THREE.MeshStandardMaterial({color:new THREE.Color(0xc6b49c).convertSRGBToLinear(),
-      metalness:.68,roughness:.46,envMapIntensity:.65});
-    const lettering=new THREE.Mesh(new THREE.ExtrudeGeometry(shapes,{depth:.0032,steps:1,curveSegments:1,
-      bevelEnabled:true,bevelThickness:.00055,bevelSize:.00055,bevelSegments:1}),brass);
-    lettering.geometry.clearGroups(); // 모든 글자를 단일 재질·한 번의 드로로 그린다.
-    lettering.name='photo-traced-raised-brass-lettering';lettering.position.z=depth+.00065;group.add(lettering);
-    // 글자 밑에 아주 좁은 접촉 음영을 둬 양각 두께를 드러낸다.
-    const letterShadow=new THREE.Mesh(new THREE.ShapeGeometry(shapes,1),new THREE.MeshBasicMaterial({
-      color:0x0c0b09,transparent:true,opacity:.48,depthWrite:false}));
-    letterShadow.name='raised-letter-contact-shadows';letterShadow.position.set(.0014,-.0022,depth+.00008);group.add(letterShadow);
-  }).catch(error=>{console.warn('쇠판 글자를 불러오지 못했습니다:',error);});
+  // 글씨를 다시 그리거나 잘라낸 윤곽으로 재구성하지 않는다.
+  // 원본 파일의 픽셀을 UV로 지정해 글자·금속 색·양각 그림자를 함께 보존한다.
+  const ready=new Promise(resolve=>{
+    const map=new THREE.TextureLoader().load('assets/wall-plaque-original.jpg',()=>{
+      map.encoding=THREE.sRGBEncoding;
+      map.wrapS=map.wrapT=THREE.ClampToEdgeWrapping;
+      map.offset.set(300/1536,1-(150+836)/1152);
+      map.repeat.set(1140/1536,836/1152);
+      map.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
+      map.magFilter=THREE.LinearFilter;
+      // WebGL1에서는 비정방형 원본이 작은 POT 이미지로 자동 축소되지 않게 한다.
+      map.generateMipmaps=renderer.capabilities.isWebGL2;
+      map.minFilter=map.generateMipmaps?THREE.LinearMipmapLinearFilter:THREE.LinearFilter;
+      map.needsUpdate=true;
+      const material=new THREE.MeshBasicMaterial({map,color:0xffffff,toneMapped:false});
+      const faceWidth=width-.01,faceHeight=faceWidth*836/1140;
+      const face=new THREE.Mesh(new THREE.PlaneGeometry(faceWidth,faceHeight),material);
+      face.name='original-photo-plaque-face';face.position.z=depth+.0028;group.add(face);
+      resolve();
+    },undefined,error=>{console.warn('쇠판 원본 사진을 불러오지 못했습니다:',error);resolve();});
+  });
   return {group,ready};
 }
