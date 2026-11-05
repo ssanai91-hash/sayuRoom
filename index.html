@@ -15,7 +15,7 @@
 <canvas id="c" aria-label="사유의 방 3D 공간"></canvas>
 
 <div id="gate">
-  <small class="gate-version" lang="en">ver 0.15</small>
+  <small class="gate-version" lang="en">ver 0.16</small>
   <h1 class="sr-only">사유의 방 — A Room of Quiet Contemplation</h1>
   <div class="gate-visual" aria-hidden="true">
     <img class="gate-art" src="assets/entrance-wall.webp" width="1086" height="1448" alt="" fetchpriority="high" decoding="async">
@@ -93,6 +93,10 @@ scene.background=new THREE.Color(SAYU_LOOK.room.background).convertSRGBToLinear(
 const camera=new THREE.PerspectiveCamera(62,1,0.05,60);
 
 const room=createSayuEnvironment({THREE,scene,renderer});
+// 정적 그림자와 금속 반사는 앱 복귀·GPU 복구 때 다시 준비한다.
+canvas.addEventListener('webglcontextrestored',()=>room.restoreLighting({rebuildReflections:true}));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)room.restoreLighting();});
+addEventListener('pageshow',event=>{if(event.persisted)room.restoreLighting();});
 const starMat=room.starMaterial;
 const statues=room.statues;
 // 2단계: 다가가면 고화질(KTX2)로 교체. 고화질 파일이 없으면 조용히 2K 유지.

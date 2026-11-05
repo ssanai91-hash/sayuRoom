@@ -7,9 +7,9 @@ const SAYU_LOOK = {
   room: { background: 0x080402, sky: 0xd4dce3, ground: 0x171009, hemisphere: 0.17,
     ambientColor: 0xffefe0, ambient: 0.085, bounceColor: 0xffc596, bounce: 0.19 },
   lights: {
-    key: { kelvin: 3950, intensity: 13.8, position: [-0.48,3.47,2.32], angle: 0.30 },
-    rim: { kelvin: 3350, intensity: 2.75, position: [0.50,3.45,-1.65], angle: 0.36 },
-    fill: { kelvin: 5000, intensity: 3.25, position: [0.64,2.22,1.55], angle: 0.4 }
+    key: { kelvin: 3950, intensity: 13.8, position: [-0.48,3.47,2.32], angle: 0.46, penumbra: 0.38, targetHeight: 0.62 },
+    rim: { kelvin: 3350, intensity: 2.75, position: [0.50,3.45,-1.65], angle: 0.44, penumbra: 0.55, targetHeight: 0.55 },
+    fill: { kelvin: 5000, intensity: 3.25, position: [0.64,2.22,1.55], angle: 0.50, penumbra: 0.55, targetHeight: 0.72 }
   },
   // ORM의 거칠기 기준 구간. 작은 값일수록 광택이 좁고 선명하다.
   statue: { reflection: 1.48, ao: 0.76, goldRoughness: [0.28,0.48], patinaRoughness: [0.68,0.94] },

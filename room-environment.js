@@ -178,8 +178,10 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
   });
   const stars=new THREE.Points(starsGeo,starMaterial);stars.name='quiet-ceiling-lights';scene.add(stars);
 
-  // 검은 천장과 따뜻한 벽 상단을 반사 환경에 반영한다.
-  if(environment&&typeof document!=='undefined'){
+  // GPU가 다시 시작돼도 금속 반사용 렌더 텍스처를 새로 만들 수 있게 보관한다.
+  let environmentTarget=null;
+  function rebuildEnvironment(){
+    if(!environment||typeof document==='undefined')return;
     const directions=[(u,v)=>[1,-v,-u],(u,v)=>[-1,-v,u],(u,v)=>[u,1,v],(u,v)=>[u,-1,-v],(u,v)=>[u,-v,1],(u,v)=>[-u,-v,-1]];
     const faces=directions.map(direction=>{
       const c=document.createElement('canvas');c.width=c.height=256;
@@ -197,8 +199,11 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     });
     const cube=new THREE.CubeTexture(faces);cube.encoding=THREE.sRGBEncoding;cube.needsUpdate=true;
     const pmrem=new THREE.PMREMGenerator(renderer),target=pmrem.fromCubemap(cube);
+    const previous=environmentTarget;environmentTarget=target;
     scene.environment=target.texture;cube.dispose();pmrem.dispose();
+    if(previous)previous.dispose();
   }
+  rebuildEnvironment();
 
   scene.add(new THREE.HemisphereLight(look.room.sky,look.room.ground,look.room.hemisphere));
   scene.add(new THREE.AmbientLight(look.room.ambientColor,look.room.ambient));
@@ -244,7 +249,11 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     for(const name of ['key','rim','fill']){
       const lamp=rig[name],v=look.lights[name],[x,y,z]=v.position;
       lamp.color.copy(lightColor(v.kelvin));lamp.intensity=v.intensity;lamp.angle=v.angle;
+      lamp.penumbra=v.penumbra??(name==='key'?.38:.55);
       lamp.position.set(rig.s.x+x,y,rig.s.z+z);
+      const targetFraction=v.targetHeight??(name==='key'?.62:name==='rim'?.55:.72);
+      const targetY=p.height+rig.s.height+rig.s.statueHeight*rig.s.statueScale*targetFraction;
+      lamp.target.position.set(rig.s.x+(name==='key'?-.04:0),targetY,rig.s.z+(name==='key'?.04:0));
     }
   }
   function applyLook(){
@@ -259,7 +268,22 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     }
     gloss.value.fromArray([...look.statue.goldRoughness,...look.statue.patinaRoughness]);ao.value=look.statue.ao;
     for(const model of models)model.traverse(o=>{if(o.isMesh)for(const m of [].concat(o.material))m.envMapIntensity=look.statue.reflection;});
-    rigs.forEach(setRig);renderer.shadowMap.needsUpdate=true;
+    rigs.forEach(setRig);refreshShadows();
+  }
+  function refreshShadows(){
+    renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.shadowMap.autoUpdate=false;
+    for(const rig of rigs){rig.key.castShadow=true;rig.key.shadow.needsUpdate=true;}
+    renderer.shadowMap.needsUpdate=true;
+  }
+  function restoreLighting({rebuildReflections=false}={}){
+    if(rebuildReflections){
+      rebuildEnvironment();
+      scene.traverse(object=>{if(object.isMesh)for(const material of [].concat(object.material)){
+        if(material.isMeshStandardMaterial)material.needsUpdate=true;
+      }});
+    }
+    applyLook();
   }
   applyLook();
   function addStatue(model,index){
@@ -283,7 +307,7 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
       o.material=Array.isArray(o.material)?o.material.map(prepare):prepare(o.material);
     }});group.add(model);scene.add(group);
-    // 전면 쪽에서 얼굴·뺨의 손으로 향하게 해 보관 아래의 깊은 그림자를 줄인다.
+    // 확대된 불상 전체와 받침대 뒤 바닥에 빛이 닿도록 실제 높이를 기준으로 조준한다.
     const spot=new THREE.SpotLight(0xffffff,1,8,1,.88,1.3);
     const faceY=p.height+s.height+s.statueHeight*s.statueScale*.80;
     spot.target.position.set(s.x-.04,faceY,s.z+.04);
@@ -296,9 +320,9 @@ function createSayuEnvironment({THREE,scene,renderer,loadTexture,environment=tru
     const rig={s,key:spot,rim,fill};rigs.push(rig);setRig(rig);
     const focusY=p.height+s.height+s.statueHeight*s.statueScale*.6;
     const item={grp:group,x:s.x,z:s.z,focusY};statues.push(item);
-    renderer.shadowMap.needsUpdate=true;return item;
+    refreshShadows();return item;
   }
   function groundHeight(x,z){return (x*x/(p.radiusX*p.radiusX)+(z-p.centerZ)*(z-p.centerZ)/(p.radiusZ*p.radiusZ))<1?p.height:floorHeight(z);}
-  return {spec,statues,starMaterial,wallPlaque,applyLook,addStatue,groundHeight,constrainPosition,ready:Promise.all(pending)};
+  return {spec,statues,starMaterial,wallPlaque,applyLook,restoreLighting,addStatue,groundHeight,constrainPosition,ready:Promise.all(pending)};
 }
 if(typeof module!=='undefined')module.exports={SAYU_ROOM_SPEC,createSayuEnvironment};
